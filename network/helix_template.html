@@ -1,0 +1,193 @@
+<title>Elica del canone</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the 3D scene fills the page; a compact panel floats top-left with controls, reading and the selected chapter.
+   Dark-first by choice: a night-sky stage for a luminous column. */
+:root {
+  --bg: #0c1016; --panel: rgba(18, 23, 31, 0.88); --ink: #eef1f4; --ink-2: #b8c0c9; --muted: #8b95a1;
+  --rule: #2a3240; --ot: #ef7a45; --nt: #4d97ee; --thread-x: #f3c969; --accent: #8cb8e6;
+  --f-display: "Literata", Georgia, serif;
+  --f-ui: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 14px; line-height: 1.5; overflow: hidden; }
+#stage { position: fixed; inset: 0; touch-action: none; }
+.panel { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); width: min(340px, calc(100vw - 24px)); max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; backdrop-filter: blur(6px); z-index: 2; }
+h1 { font-family: var(--f-display); font-weight: 600; font-size: 22px; margin: 0; line-height: 1.15; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 12.5px; }
+.eyebrow { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.seg button { font: inherit; font-size: 12.5px; padding: 5px 10px; border: 0; background: transparent; color: var(--ink-2); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+button.plain { font: inherit; font-size: 12.5px; padding: 5px 10px; border: 1px solid var(--rule); border-radius: 7px; background: transparent; color: var(--ink-2); cursor: pointer; }
+label.check { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--ink-2); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.legend i.line { width: 14px; height: 0; border-radius: 0; border-top: 2px solid; vertical-align: 3px; }
+.axes { font-size: 12.5px; color: var(--ink-2); display: grid; gap: 3px; }
+.sel h2 { font-family: var(--f-display); font-size: 18px; margin: 0; font-weight: 600; }
+.sel ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
+.sel a { color: var(--accent); }
+.tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12.5px; padding: 4px 8px; border-radius: 5px; white-space: nowrap; transform: translate(-50%, calc(-100% - 12px)); z-index: 3; }
+details summary { cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+details p { font-size: 12.5px; color: var(--ink-2); margin-top: 6px; }
+.collapse { position: fixed; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); z-index: 2; }
+@media (max-width: 600px) { .panel { max-height: 46vh; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="stage" aria-label="Elica del canone in 3D: trascina per ruotare, pizzica o usa la rotellina per ingrandire"></div>
+<aside class="panel" id="panel">
+  <div class="eyebrow">Bible Network · prototipo 3D</div>
+  <h1>Elica del canone</h1>
+  <p class="muted small">L'altezza è l'ordine dei capitoli, da Genesi in basso ad Apocalisse in alto; il filo sottile li unisce in sequenza. Sul piano, capitoli vicini sono capitoli che si richiamano. I fili trasversali sono i legami più forti del previsto.</p>
+  <div class="row">
+    <div class="seg" role="group" aria-label="Rete"><button id="s-tsk3" aria-pressed="true">TSK</button><button id="s-esv" aria-pressed="false">ESV</button></div>
+    <label class="check" for="only-x"><input type="checkbox" id="only-x"> solo fili AT ↔ NT</label>
+    <button class="plain" id="reset">Vista iniziale</button>
+  </div>
+  <div class="legend"><span><i style="background:var(--ot)"></i>Antico Testamento</span><span><i style="background:var(--nt)"></i>Nuovo Testamento</span><span><i class="line" style="border-color:var(--thread-x)"></i>filo AT ↔ NT</span></div>
+  <div class="axes" id="axes"></div>
+  <div class="sel" id="sel"><p class="muted small">Tocca un capitolo per vedere i suoi fili.</p></div>
+  <details><summary>Come è costruita</summary>
+    <p>Posizione sul piano: <i>diffusion map</i> del grafo dei capitoli, cioè gli autovettori 2 e 3 della matrice di transizione di una passeggiata casuale sui rimandi, moltiplicati per i loro autovalori. A differenza di UMAP gli assi hanno un significato: sono le due direzioni lungo cui la rete si separa di più. Fili: le 900 coppie di capitoli con il rapporto più alto tra rimandi osservati e attesi (configuration model), con almeno 6 rimandi.</p>
+  </details>
+</aside>
+<div class="tip" id="tip" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const H = __DATA__;
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = H.chapters, NCH = C.length, isNT = (i) => C[i].b >= 39;
+const label = (i) => `${H.books[C[i].b]} ${C[i].c}`;
+const USFM = "GEN EXO LEV NUM DEU JOS JDG RUT 1SA 2SA 1KI 2KI 1CH 2CH EZR NEH EST JOB PSA PRO ECC SNG ISA JER LAM EZK DAN HOS JOL AMO OBA JON MIC NAM HAB ZEP HAG ZEC MAL MAT MRK LUK JHN ACT ROM 1CO 2CO GAL EPH PHP COL 1TH 2TH 1TI 2TI TIT PHM HEB JAS 1PE 2PE 1JN 2JN 3JN JUD REV".split(" ");
+const APP = "https://bible-network-615683241662.europe-west8.run.app/#/c/";
+
+const stage = document.getElementById("stage");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.setClearColor(css("--bg"));
+stage.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.autoRotate = !matchMedia("(prefers-reduced-motion: reduce)").matches; controls.autoRotateSpeed = 0.6;
+const HEIGHT = 70, SPREAD = 9;
+const home = () => {
+  const far = innerWidth < 700 ? 150 : 115;
+  camera.position.set(far * 0.72, 12, far * 0.72); controls.target.set(innerWidth > 760 ? -8 : 0, innerWidth < 700 ? -6 : 0, 0); controls.update();
+};
+
+let src = "tsk3", onlyX = false, selected = null, hovered = null;
+let pos = [], points, spine, threads, selThreads;
+const colOT = new THREE.Color(css("--ot")), colNT = new THREE.Color(css("--nt")), colX = new THREE.Color(css("--thread-x")), colSame = new THREE.Color("#7f8a99");
+
+function build() {
+  [points, spine, threads, selThreads].forEach((o) => o && scene.remove(o));
+  const xy = H[src].xy;
+  pos = C.map((_, i) => new THREE.Vector3(xy[i][0] * SPREAD, (i / (NCH - 1) - 0.5) * HEIGHT, xy[i][1] * SPREAD));
+  // chapters as instanced spheres, size by degree
+  const deg = H[src].deg, dmax = Math.max(...deg);
+  const geo = new THREE.SphereGeometry(1, 10, 8);
+  points = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial(), NCH);
+  const m = new THREE.Matrix4();
+  for (let i = 0; i < NCH; i++) {
+    const s = 0.22 + 0.55 * Math.sqrt(deg[i] / dmax);
+    m.makeScale(s, s, s).setPosition(pos[i]);
+    points.setMatrixAt(i, m);
+    points.setColorAt(i, isNT(i) ? colNT : colOT);
+  }
+  scene.add(points);
+  // the canon as one thread, in order
+  spine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pos), new THREE.LineBasicMaterial({ color: 0x9aa6b5, transparent: true, opacity: 0.18 }));
+  scene.add(spine);
+  buildThreads();
+  describeAxes();
+  if (selected !== null) select(selected);
+}
+function buildThreads() {
+  if (threads) scene.remove(threads);
+  const T = H[src].threads.filter(([i, j]) => !onlyX || isNT(i) !== isNT(j));
+  const rmax = Math.max(...T.map((t) => t[3]));
+  const verts = [], cols = [];
+  for (const [i, j, , r] of T) {
+    const c = (isNT(i) !== isNT(j) ? colX : colSame).clone().multiplyScalar(0.35 + 0.65 * Math.min(1, Math.log(r) / Math.log(rmax)));
+    verts.push(pos[i].x, pos[i].y, pos[i].z, pos[j].x, pos[j].y, pos[j].z);
+    cols.push(c.r, c.g, c.b, c.r, c.g, c.b);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+  threads = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: selected === null ? 0.55 : 0.12, blending: THREE.AdditiveBlending, depthWrite: false }));
+  scene.add(threads);
+}
+function describeAxes() {
+  const xy = H[src].xy, top = (ax, sign) => {
+    const o = [...C.keys()].sort((a, b) => sign * (xy[b][ax] - xy[a][ax])).slice(0, 60);
+    const cnt = {}; o.forEach((i) => cnt[H.books[C[i].b]] = (cnt[H.books[C[i].b]] || 0) + 1);
+    return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 3).map((x) => x[0]).join(", ");
+  };
+  document.getElementById("axes").innerHTML = `<div class="eyebrow">Cosa separano gli assi del piano</div>
+    <div>Asse 1: ${top(0, -1)} ↔ ${top(0, 1)}</div><div>Asse 2: ${top(1, -1)} ↔ ${top(1, 1)}</div>`;
+}
+function select(i) {
+  selected = i;
+  if (selThreads) scene.remove(selThreads);
+  const sel = document.getElementById("sel");
+  if (i === null) { sel.innerHTML = `<p class="muted small">Tocca un capitolo per vedere i suoi fili.</p>`; threads.material.opacity = 0.55; return; }
+  threads.material.opacity = 0.1;
+  const mine = H[src].threads.filter(([a, b]) => a === i || b === i).sort((x, y) => y[3] - x[3]);
+  const verts = [];
+  mine.forEach(([a, b]) => verts.push(pos[a].x, pos[a].y, pos[a].z, pos[b].x, pos[b].y, pos[b].z));
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+  selThreads = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 }));
+  scene.add(selThreads);
+  const other = (t) => (t[0] === i ? t[1] : t[0]);
+  sel.innerHTML = `<div class="eyebrow">${isNT(i) ? "Nuovo" : "Antico"} Testamento · ${H.genres[C[i].b]}</div><h2>${label(i)}</h2>
+    <p class="small muted">${H[src].deg[i].toLocaleString("it-IT")} rimandi ${src === "esv" ? "ESV" : "TSK"} · ${mine.length ? `${mine.length} fili tra i più forti` : "nessun filo tra i 900 più forti"}</p>
+    ${mine.length ? `<ul>${mine.slice(0, 8).map((t) => `<li>${label(other(t))} <span class="muted">· ${t[2]} rimandi, ${t[3].toLocaleString("it-IT")}× l'atteso</span></li>`).join("")}</ul>` : ""}
+    <p class="small"><a href="${APP}${USFM[C[i].b]}.${C[i].c}" target="_blank" rel="noopener">Apri nella web app →</a></p>`;
+}
+
+// picking
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = document.getElementById("tip");
+function pick(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObject(points)[0];
+  return hit ? hit.instanceId : null;
+}
+let down = null;
+renderer.domElement.addEventListener("pointerdown", (e) => { down = [e.clientX, e.clientY]; controls.autoRotate = false; });
+renderer.domElement.addEventListener("pointerup", (e) => {
+  if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 6) select(pick(e));
+  down = null;
+});
+renderer.domElement.addEventListener("pointermove", (e) => {
+  if (e.pointerType !== "mouse") return;
+  hovered = pick(e);
+  tip.hidden = hovered === null;
+  if (hovered !== null) { tip.textContent = label(hovered); tip.style.left = e.clientX + "px"; tip.style.top = e.clientY + "px"; }
+});
+
+for (const s of ["tsk3", "esv"]) document.getElementById("s-" + s).addEventListener("click", () => {
+  src = s; ["tsk3", "esv"].forEach((x) => document.getElementById("s-" + x).setAttribute("aria-pressed", x === s)); build();
+});
+document.getElementById("only-x").addEventListener("change", (e) => { onlyX = e.target.checked; buildThreads(); if (selected !== null) threads.material.opacity = 0.1; });
+document.getElementById("reset").addEventListener("click", () => { select(null); home(); });
+
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener("resize", resize);
+resize(); home(); build();
+(function loop() { controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); })();
+</script>
