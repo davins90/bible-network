@@ -1,0 +1,304 @@
+<title>Come si distribuiscono i rimandi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of numbered findings; each finding = claim, chart, plain-language reading */
+:root {
+  --bg: #f6f7f8; --surface: #ffffff; --ink: #14181d; --ink-2: #4d5560; --muted: #6f7782;
+  --rule: #dfe3e8; --grid: #e8ebee; --axis: #c3c9d0; --accent: #1f4e79;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --f-display: "Literata", Georgia, serif;
+  --f-ui: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #101317; --surface: #171b20; --ink: #eef1f4; --ink-2: #b8c0c9; --muted: #8f98a2;
+  --rule: #2a3038; --grid: #22272e; --axis: #3a414a; --accent: #8cb8e6;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #101317; --surface: #171b20; --ink: #eef1f4; --ink-2: #b8c0c9; --muted: #8f98a2;
+  --rule: #2a3038; --grid: #22272e; --axis: #3a414a; --accent: #8cb8e6;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+main { max-width: 920px; margin: 0 auto; display: grid; gap: 40px; }
+h1, h2 { font-family: var(--f-display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.12; }
+h2 { font-size: 22px; line-height: 1.25; }
+p { margin: 0; max-width: 70ch; }
+.lede { color: var(--ink-2); font-size: 16px; }
+.eyebrow { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+header, section { display: grid; gap: 12px; }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.reading { color: var(--ink-2); }
+.reading b { color: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
+.legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; margin-right: 6px; vertical-align: 3px; }
+.legend i.dot { width: 8px; height: 8px; border: 0; border-radius: 50%; vertical-align: 0; }
+.legend i.dash { border-top-style: dashed; }
+.cols2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 720px) { .cols2 { grid-template-columns: minmax(0, 1fr); } }
+.chart { position: relative; min-width: 0; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--muted); font-size: 11px; font-family: var(--f-ui); }
+svg .title { fill: var(--ink); font-weight: 600; font-size: 12.5px; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12px; padding: 5px 8px; border-radius: 5px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); z-index: 2; }
+.figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px 20px; }
+.figs div { display: grid; }
+.figs b { font-family: var(--f-display); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.figs span { font-size: 12.5px; color: var(--muted); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th { text-align: left; font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding: 5px 8px; border-bottom: 1px solid var(--axis); font-weight: 600; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+td.num, th.num { text-align: right; }
+.tablewrap { overflow-x: auto; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; justify-self: start; }
+.seg button { font: inherit; font-size: 13px; padding: 5px 11px; border: 0; background: transparent; color: var(--ink-2); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hubs { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 13.5px; }
+.hubs li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--rule); }
+.hubs li span:last-child { font-family: var(--f-mono); font-size: 12px; color: var(--ink-2); }
+.method { font-size: 13.5px; color: var(--ink-2); display: grid; gap: 8px; }
+code { font-family: var(--f-mono); font-size: 0.9em; }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Bible Network · statistica dei rimandi</div>
+  <h1>Come si distribuiscono i rimandi</h1>
+  <p class="lede">Quanti rimandi ha un versetto, da cosa dipende, quanto sono concentrati e quanto lontano saltano. Due reti a confronto: il <i>Treasury of Scripture Knowledge</i> (1830, via OpenBible, almeno 3 voti) e l'ESV (Crossway, 2001). Il "grado" di un versetto è il numero di versetti diversi a cui è collegato.</p>
+  <div class="legend"><span><i class="dot" style="background:var(--s1)"></i>TSK</span><span><i class="dot" style="background:var(--s2)"></i>ESV</span></div>
+  <div class="figs" id="figs"></div>
+</header>
+
+<section>
+  <div class="eyebrow">1 · La forma della coda</div>
+  <h2>Code pesanti, ma non una legge di potenza</h2>
+  <div class="panel">
+    <div class="cols2"><div class="chart" id="ccdf-tsk3"></div><div class="chart" id="ccdf-esv"></div></div>
+    <div class="legend"><span><i class="dot" style="background:var(--ink-2)"></i>dati: quota di versetti con almeno x rimandi</span><span><i class="dash" style="border-color:var(--ink-2)"></i>legge di potenza</span><span><i style="border-color:var(--s3)"></i>lognormale</span></div>
+    <p class="reading" id="r-tail"></p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">2 · Tutti i versetti, anche quelli senza rimandi</div>
+  <h2>Una binomiale negativa li descrive quasi alla perfezione</h2>
+  <div class="panel">
+    <div class="seg" role="group" aria-label="Rete"><button id="nb-tsk3" aria-pressed="true">TSK</button><button id="nb-esv" aria-pressed="false">ESV</button></div>
+    <div class="chart" id="nbchart"></div>
+    <div class="legend"><span><i class="dot" style="background:var(--s1)" id="nb-dot"></i>versetti osservati</span><span><i style="border-color:var(--ink)"></i>attesi dalla binomiale negativa</span><span><i class="dash" style="border-color:var(--muted)"></i>attesi da una Poisson</span></div>
+    <p class="reading" id="r-nb"></p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">3 · Da cosa dipende il numero di rimandi</div>
+  <h2>Lunghezza, genere e posizione nel libro</h2>
+  <div class="panel">
+    <div class="chart" id="forest"></div>
+    <p class="reading" id="r-reg"></p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">4 · Concentrazione</div>
+  <h2>Pochi versetti raccolgono molti rimandi</h2>
+  <div class="panel">
+    <div class="cols2">
+      <div class="chart" id="lorenz"></div>
+      <div style="display:grid;gap:10px;align-content:start;min-width:0">
+        <div class="cols2" style="gap:12px">
+          <div><div class="eyebrow" style="margin-bottom:6px">Hub TSK</div><ol class="hubs" id="hubs-tsk3"></ol></div>
+          <div><div class="eyebrow" style="margin-bottom:6px">Hub ESV</div><ol class="hubs" id="hubs-esv"></ol></div>
+        </div>
+      </div>
+    </div>
+    <p class="reading" id="r-conc"></p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">5 · Quanto lontano saltano, e in che direzione</div>
+  <h2>I rimandi attraversano la Bibbia</h2>
+  <div class="panel">
+    <div class="chart" id="jump"></div>
+    <div class="tablewrap"><table id="jumptable"></table></div>
+    <p class="reading" id="r-jump"></p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Metodo</div>
+  <div class="panel method" id="method"></div>
+</section>
+</main>
+
+<script>
+const D = __DATA__;
+const S = ["tsk3", "esv"], NAME = { tsk3: "TSK", esv: "ESV" }, COL = { tsk3: "var(--s1)", esv: "var(--s2)" };
+const n = (x, d = 0) => Number(x).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d });
+const pct = (x, d = 0) => n(x * 100, d) + "%";
+const svgNS = "http://www.w3.org/2000/svg";
+
+function tipFor(host) {
+  let t = host.querySelector(".tip");
+  if (!t) { t = document.createElement("div"); t.className = "tip"; t.hidden = true; host.appendChild(t); }
+  return t;
+}
+function axisLog(min, max) { const out = []; for (let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++) out.push(10 ** e); return out.filter((v) => v >= min * 0.999 && v <= max * 1.001); }
+
+// ---------- header figures ----------
+const T = D.tsk3, E = D.esv;
+document.getElementById("figs").innerHTML = [
+  [`${n(T.full.mean, 1)} · ${n(E.full.mean, 1)}`, "rimandi medi per versetto (TSK · ESV)"],
+  [`${n(T.full.median)} · ${n(E.full.median)}`, "mediana"],
+  [`${n(T.full.max)} · ${n(E.full.max)}`, "il versetto più collegato"],
+  [`${n(T.full.zeros)} · ${n(E.full.zeros)}`, "versetti senza nessun rimando"],
+].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join("");
+
+// ---------- 1. CCDF ----------
+function ccdfChart(s) {
+  const host = document.getElementById("ccdf-" + s), d = D[s], w = 420, h = 300, ml = 46, mr = 12, mt = 26, mb = 34;
+  const pts = d.full.ccdf.filter(([x, y]) => y > 0);
+  const xmax = Math.max(...pts.map((p) => p[0])), ymin = Math.min(...pts.map((p) => p[1]));
+  const X = (x) => ml + Math.log10(x) / Math.log10(xmax) * (w - ml - mr);
+  const Y = (y) => mt + (Math.log10(y) / Math.log10(ymin)) * (h - mt - mb);
+  let g = `<text class="title" x="${ml}" y="14">${NAME[s]}</text>`;
+  for (const v of axisLog(1, xmax)) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${mt}" y2="${h - mb}" stroke="var(--grid)"/><text x="${X(v)}" y="${h - mb + 16}" text-anchor="middle">${n(v)}</text>`;
+  for (const v of axisLog(ymin, 1)) g += `<line x1="${ml}" x2="${w - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${ml - 6}" y="${Y(v) + 4}" text-anchor="end">${v >= 0.01 ? pct(v) : pct(v, 2)}</text>`;
+  g += `<text x="${w - mr}" y="${h - 4}" text-anchor="end">rimandi per versetto (x, scala log)</text>`;
+  const line = (arr, style) => `<path d="${arr.filter((p) => p[1] > 0).map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("")}" fill="none" ${style}/>`;
+  g += line(d.tail.model_ccdf.power_law, `stroke="var(--ink-2)" stroke-width="2" stroke-dasharray="5 4"`);
+  g += line(d.tail.model_ccdf.lognormal, `stroke="var(--s3)" stroke-width="2"`);
+  g += `<line x1="${X(d.tail.xmin)}" x2="${X(d.tail.xmin)}" y1="${mt}" y2="${h - mb}" stroke="var(--axis)" stroke-dasharray="2 3"/><text x="${X(d.tail.xmin) + 4}" y="${mt + 10}">inizio coda: ${d.tail.xmin}</text>`;
+  g += pts.map(([x, y]) => `<circle cx="${X(x).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="3.2" fill="${COL[s]}" stroke="var(--surface)" stroke-width="1"><title>${pct(y, 2)} dei versetti ha almeno ${x} rimandi</title></circle>`).join("");
+  host.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Distribuzione cumulata dei gradi, ${NAME[s]}">${g}</svg>`;
+}
+S.forEach(ccdfChart);
+const tl = (s) => D[s].tail;
+document.getElementById("r-tail").innerHTML = `Su scala log-log una legge di potenza sarebbe una retta: i punti invece <b>piegano verso il basso</b>. Con il metodo di Clauset, Shalizi e Newman la legge di potenza perde contro la lognormale in entrambe le reti (TSK: R = ${n(tl("tsk3").vs_power_law.lognormal.R, 1)}; ESV: R = ${n(tl("esv").vs_power_law.lognormal.R, 1)}; p &lt; 10⁻⁴⁰), e anche contro una legge di potenza troncata. Tra queste due la differenza è piccola: nel TSK la troncata è appena migliore (p = ${n(tl("tsk3").lognormal_vs_tpl.p, 2)}), nell'ESV sono indistinguibili (p = ${n(tl("esv").lognormal_vs_tpl.p, 2)}). In parole povere: ci sono versetti molto più collegati della media, ma <b>non esistono "super-hub" senza limite</b> come nelle reti scale-free. È coerente con un'opera curata a mano: un editore non aggiunge rimandi all'infinito.`;
+
+// ---------- 2. NB fit ----------
+function nbpmf(k, mu, a) { const r = 1 / a, p = r / (r + mu); let lg = 0; for (let i = 0; i < k; i++) lg += Math.log((r + i) / (i + 1)); return Math.exp(lg + r * Math.log(p) + k * Math.log(1 - p)); }
+function poisson(k, mu) { let lg = -mu; for (let i = 1; i <= k; i++) lg += Math.log(mu / i); return Math.exp(lg); }
+function nbChart(s) {
+  const d = D[s], host = document.getElementById("nbchart"), w = 860, h = 280, ml = 50, mr = 12, mt = 12, mb = 34;
+  const K = s === "tsk3" ? 45 : 20, N = d.full.n_verses;
+  const obs = d.full.obs_counts.slice(0, K + 1);
+  const exp = obs.map((_, k) => N * nbpmf(k, d.full.nb_mu, d.full.nb_alpha));
+  const pois = obs.map((_, k) => N * poisson(k, d.full.nb_mu));
+  const ymax = Math.max(...obs, ...exp, ...pois) * 1.08;
+  const bw = (w - ml - mr) / (K + 1), X = (k) => ml + k * bw, Y = (v) => mt + (1 - Math.min(v, ymax) / ymax) * (h - mt - mb);
+  let g = "";
+  for (let t = 0; t <= ymax; t += niceStep(ymax)) g += `<line x1="${ml}" x2="${w - mr}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--grid)"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${n(t)}</text>`;
+  g += obs.map((v, k) => `<rect x="${(X(k) + 1).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${(Y(0) - Y(v)).toFixed(1)}" rx="2" fill="${COL[s]}" fill-opacity="0.85" data-k="${k}"/>`).join("");
+  const path = (arr) => arr.map((v, k) => `${k ? "L" : "M"}${(X(k) + bw / 2).toFixed(1)},${Y(v).toFixed(1)}`).join("");
+  g += `<path d="${path(pois)}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  g += `<path d="${path(exp)}" fill="none" stroke="var(--ink)" stroke-width="2"/>`;
+  for (let k = 0; k <= K; k += 5) g += `<text x="${X(k) + bw / 2}" y="${h - mb + 16}" text-anchor="middle">${k}</text>`;
+  g += `<line x1="${ml}" x2="${w - mr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--axis)"/><text x="${w - mr}" y="${h - 4}" text-anchor="end">rimandi per versetto</text><text x="${ml}" y="${mt - 2}" dy="-2">versetti</text>`;
+  host.innerHTML = `<div class="tablewrap"><svg viewBox="0 0 ${w} ${h}" style="min-width:520px" role="img" aria-label="Versetti per numero di rimandi, ${NAME[s]}">${g}</svg></div>`;
+  const tip = tipFor(host), svg = host.querySelector("svg");
+  svg.addEventListener("pointermove", (e) => {
+    const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) * (w / r.width), k = Math.floor((x - ml) / bw);
+    if (k < 0 || k > K) { tip.hidden = true; return; }
+    tip.hidden = false; tip.textContent = `${k} rimandi: ${n(obs[k])} versetti · attesi NB ${n(exp[k])} · Poisson ${n(pois[k])}`;
+    tip.style.left = ((X(k) + bw / 2) * r.width / w + (r.left - host.getBoundingClientRect().left)) + "px"; tip.style.top = (Y(obs[k]) * r.height / h) + "px";
+  });
+  svg.addEventListener("pointerleave", () => tip.hidden = true);
+  document.getElementById("nb-dot").style.background = COL[s];
+  const f = d.full;
+  document.getElementById("r-nb").innerHTML = `La varianza è <b>${n(f.dispersion_index, 1)} volte la media</b>: una Poisson (i rimandi assegnati a caso, tutti con la stessa probabilità) è esclusa, e infatti prevede ${n(f.zeros_expected_poisson)} versetti senza rimandi contro ${n(f.zeros)} osservati. La binomiale negativa (media ${n(f.nb_mu, 2)}, sovradispersione α = ${n(f.nb_alpha, 2)}) ne prevede ${n(f.zeros_expected_nb)} e segue bene tutta la curva. È il modello di una <b>Poisson con tasso diverso per ogni versetto</b>, distribuito come una Gamma: ogni versetto ha la sua "rimandabilità". La stessa miscela Gamma-Poisson che usavamo per lo shrinkage dei libri.`;
+}
+function niceStep(max) { const raw = max / 5, p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= raw); }
+let nbSrc = "tsk3";
+for (const s of S) document.getElementById("nb-" + s).addEventListener("click", () => { nbSrc = s; S.forEach((x) => document.getElementById("nb-" + x).setAttribute("aria-pressed", x === s)); nbChart(s); });
+nbChart("tsk3");
+
+// ---------- 3. forest plot ----------
+(function () {
+  const host = document.getElementById("forest"), terms = D.tsk3.regression.coefs.map((c) => c.term).filter((t) => !["logw", "pos", "I(pos ** 2)"].includes(t));
+  const rows = [...terms];
+  const w = 860, rh = 30, ml = 210, mr = 20, mt = 26, h = mt + rows.length * rh + 30;
+  const all = S.flatMap((s) => D[s].regression.coefs.filter((c) => rows.includes(c.term)).flatMap((c) => [c.lo, c.hi]));
+  const lo = Math.min(0.5, ...all), hi = Math.max(...all) * 1.1;
+  const X = (v) => ml + (Math.log(v) - Math.log(lo)) / (Math.log(hi) - Math.log(lo)) * (w - ml - mr);
+  let g = `<text class="title" x="0" y="14">Rimandi rispetto al Pentateuco, a parità di lunghezza e posizione</text>`;
+  for (const v of [0.5, 1, 2, 4].filter((v) => v >= lo && v <= hi)) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${mt}" y2="${h - 26}" stroke="${v === 1 ? "var(--axis)" : "var(--grid)"}" ${v === 1 ? 'stroke-width="1.5"' : ""}/><text x="${X(v)}" y="${h - 10}" text-anchor="middle">${n(v, v < 1 ? 1 : 0)}×</text>`;
+  rows.forEach((t, i) => {
+    const y = mt + i * rh + rh / 2;
+    g += `<text x="${ml - 12}" y="${y + 4}" text-anchor="end" style="fill:var(--ink);font-size:12.5px">${t}</text>`;
+    S.forEach((s, j) => {
+      const c = D[s].regression.coefs.find((x) => x.term === t), yy = y + (j ? 6 : -6);
+      g += `<line x1="${X(c.lo)}" x2="${X(c.hi)}" y1="${yy}" y2="${yy}" stroke="${COL[s]}" stroke-width="2"/><circle cx="${X(c.irr)}" cy="${yy}" r="4.5" fill="${COL[s]}" stroke="var(--surface)" stroke-width="1.5"><title>${NAME[s]} · ${t}: ${n(c.irr, 2)}× (IC 95% ${n(c.lo, 2)}–${n(c.hi, 2)})</title></circle>`;
+    });
+  });
+  host.innerHTML = `<div class="tablewrap"><svg viewBox="0 0 ${w} ${h}" style="min-width:560px" role="img" aria-label="Effetto del genere sul numero di rimandi">${g}</svg></div>`;
+  const c = (s, t) => D[s].regression.coefs.find((x) => x.term === t);
+  const dbl = (s) => 2 ** Math.log(c(s, "logw").irr);
+  const pos = (s) => { const b1 = Math.log(c(s, "pos").irr), b2 = Math.log(c(s, "I(pos ** 2)").irr); return { min: -b1 / (2 * b2), mid: Math.exp(b1 * 0.5 + b2 * 0.25), end: Math.exp(b1 + b2) }; };
+  document.getElementById("r-reg").innerHTML = `Regressione binomiale negativa sul numero di rimandi di ciascuno dei ${n(D.tsk3.regression.n)} versetti. <b>Lunghezza:</b> un versetto lungo il doppio ha ${n(dbl("tsk3"), 2)} volte i rimandi nel TSK e ${n(dbl("esv"), 2)} nell'ESV: più parole, più agganci, ma meno che in proporzione. <b>Genere:</b> a parità di lunghezza le lettere di Paolo hanno ${n(c("tsk3", "Lettere di Paolo").irr, 1)} volte i rimandi del Pentateuco nel TSK, ma solo ${n(c("esv", "Lettere di Paolo").irr, 1)} nell'ESV; Salmi e sapienziali ${n(c("tsk3", "Poetici e sapienziali").irr, 1)} contro ${n(c("esv", "Poetici e sapienziali").irr, 1)}. I libri storici sono sotto il Pentateuco in entrambe (${n(c("tsk3", "Storici").irr, 2)}×). Il TSK quindi "gonfia" proprio i testi dottrinali e devozionali. <b>Posizione:</b> l'inizio di un libro è il più collegato; a metà libro si scende a ${n(pos("tsk3").mid, 2)}× e verso la fine si risale appena (minimo intorno al ${pct(pos("tsk3").min)} del libro). Lo pseudo-R² è basso (${n(D.tsk3.regression.pseudo_r2, 2)} e ${n(D.esv.regression.pseudo_r2, 2)}): lunghezza, genere e posizione spiegano poco. Il grosso dipende dal <b>contenuto</b> del singolo versetto, ed è una buona notizia.`;
+})();
+
+// ---------- 4. Lorenz ----------
+(function () {
+  const host = document.getElementById("lorenz"), w = 400, h = 340, ml = 46, mr = 14, mt = 14, mb = 40;
+  const X = (v) => ml + v * (w - ml - mr), Y = (v) => h - mb - v * (h - mt - mb);
+  let g = "";
+  for (const v of [0, 0.25, 0.5, 0.75, 1]) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${Y(0)}" y2="${Y(1)}" stroke="var(--grid)"/><line x1="${X(0)}" x2="${X(1)}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${X(v)}" y="${h - mb + 16}" text-anchor="middle">${pct(v)}</text><text x="${ml - 6}" y="${Y(v) + 4}" text-anchor="end">${pct(v)}</text>`;
+  g += `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(1)}" y2="${Y(1)}" stroke="var(--axis)" stroke-dasharray="4 4"/><text x="${X(0.62)}" y="${Y(0.55)}" transform="rotate(-38 ${X(0.62)} ${Y(0.55)})">parità perfetta</text>`;
+  S.forEach((s) => {
+    const pts = [[0, 0], ...D[s].concentration.lorenz];
+    g += `<path d="${pts.map(([a, b], i) => `${i ? "L" : "M"}${X(a).toFixed(1)},${Y(b).toFixed(1)}`).join("")}" fill="none" stroke="${COL[s]}" stroke-width="2.2"/>`;
+  });
+  g += `<text x="${w - mr}" y="${h - 6}" text-anchor="end">versetti, dal più collegato</text>`;
+  host.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Curva di Lorenz dei rimandi">${g}</svg>`;
+  for (const s of S) document.getElementById("hubs-" + s).innerHTML = D[s].hubs.slice(0, 10).map((x) => `<li><span>${x.v}</span><span>${x.k}</span></li>`).join("");
+  const c = (s) => D[s].concentration;
+  document.getElementById("r-conc").innerHTML = `Il 10% dei versetti più collegati raccoglie il <b>${pct(c("tsk3").top10)}</b> dei rimandi nel TSK e il <b>${pct(c("esv").top10)}</b> nell'ESV (Gini ${n(c("tsk3").gini, 2)} e ${n(c("esv").gini, 2)}: l'ESV è più concentrato, anche perché un terzo dei versetti non ha rimandi). Gli hub sono diversi: nel TSK versetti teologici e molto amati (Is 9:6, 1 Pt 2:9, Is 41:10); nell'ESV le <b>formule dell'alleanza</b> ripetute, come la promessa ai patriarchi (Gn 26:3, Gn 12:7) e "vi prenderò come mio popolo" (Es 6:7): i curatori collegano tra loro tutte le ripetizioni.`;
+})();
+
+// ---------- 5. jumps ----------
+(function () {
+  const host = document.getElementById("jump"), w = 860, h = 250, ml = 50, mr = 14, mt = 14, mb = 38;
+  const bins = D.tsk3.jump.hist_bins, k = bins.length - 1;
+  const dens = (s) => { const hh = D[s].jump.hist, t = hh.reduce((a, b) => a + b, 0); return hh.map((v) => v / t); };
+  const dt = dens("tsk3"), de = dens("esv"), ymax = Math.max(...dt, ...de) * 1.1;
+  const X = (v) => ml + Math.log10(v) / Math.log10(bins[k]) * (w - ml - mr), Y = (v) => mt + (1 - v / ymax) * (h - mt - mb);
+  let g = "";
+  const st = niceStep(ymax);
+  for (let t = 0; t <= ymax; t += st) g += `<line x1="${ml}" x2="${w - mr}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--grid)"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${pct(t, Number.isInteger(Math.round(st * 1000) / 10) ? 0 : 1)}</text>`;
+  const marks = [[1, "1"], [10, "10"], [100, "100"], [1000, "1.000"], [10000, "10.000"]];
+  for (const [v, l] of marks) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${mt}" y2="${Y(0)}" stroke="var(--grid)"/><text x="${X(v)}" y="${h - mb + 16}" text-anchor="middle">${l}</text>`;
+  const refs = [[25, "un capitolo"], [800, "un libro medio"], [23145, "l'intero AT"]];
+  for (const [v, l] of refs) g += `<text x="${X(v)}" y="${mt + 10}" text-anchor="middle" style="font-size:10.5px">↓ ${l}</text>`;
+  S.forEach((s) => {
+    const d = s === "tsk3" ? dt : de;
+    g += `<path d="${d.map((v, i) => `${i ? "L" : "M"}${X(bins[i]).toFixed(1)},${Y(v).toFixed(1)}H${X(bins[i + 1]).toFixed(1)}`).join("")}" fill="none" stroke="${COL[s]}" stroke-width="2.2"/>`;
+  });
+  g += `<line x1="${ml}" x2="${w - mr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--axis)"/><text x="${w - mr}" y="${h - 4}" text-anchor="end">distanza lungo il canone, in versetti (scala log)</text>`;
+  host.innerHTML = `<div class="tablewrap"><svg viewBox="0 0 ${w} ${h}" style="min-width:560px" role="img" aria-label="Distanza dei rimandi lungo il canone">${g}</svg></div>`;
+  const J = (s) => D[s].jump;
+  const row = (l, f) => `<tr><td>${l}</td>${S.map((s) => `<td class="num">${f(s)}</td>`).join("")}</tr>`;
+  const dir = (s, a) => J(s).direction[a] || 0;
+  document.getElementById("jumptable").innerHTML = `<thead><tr><th></th><th class="num">TSK</th><th class="num">ESV</th></tr></thead><tbody>` +
+    row("Distanza mediana", (s) => `${n(J(s).median)} versetti`) +
+    row("Nello stesso capitolo", (s) => pct(J(s).same_chapter)) +
+    row("Nello stesso libro, altro capitolo", (s) => pct(J(s).same_book_other_chapter)) +
+    row("Nello stesso Testamento, altro libro", (s) => pct(J(s).same_testament_other_book)) +
+    row("Tra Antico e Nuovo Testamento", (s) => pct(J(s).cross_testament)) +
+    row("Da un versetto dell'AT verso il NT", (s) => n(dir(s, "AT→NT"))) +
+    row("Da un versetto del NT verso l'AT", (s) => n(dir(s, "NT→AT"))) + "</tbody>";
+  document.getElementById("r-jump").innerHTML = `I rimandi <b>non restano vicini</b>: solo il ${pct(J("tsk3").same_chapter)} cade nello stesso capitolo e la distanza mediana è di ${n(J("tsk3").median)} versetti nel TSK (circa due libri e mezzo) e ${n(J("esv").median)} nell'ESV, che resta più spesso nello stesso libro (${pct(J("esv").same_book_other_chapter)} contro ${pct(J("tsk3").same_book_other_chapter)}), per esempio tra i passi paralleli di Samuele, Re e Cronache. La differenza più interessante è la <b>direzione</b>: nel TSK i rimandi scritti su un versetto dell'AT che puntano al NT (${n(dir("tsk3", "AT→NT"))}) sono più di quelli dal NT all'AT (${n(dir("tsk3", "NT→AT"))}); nell'ESV è il contrario (${n(dir("esv", "AT→NT"))} contro ${n(dir("esv", "NT→AT"))}). Il TSK legge l'Antico Testamento <b>in avanti</b>, cercando il compimento; l'ESV segue soprattutto le citazioni che il Nuovo fa dell'Antico.`;
+})();
+
+document.getElementById("method").innerHTML = `
+<p><b>Dati.</b> ${n(D.tsk3.jump.n)} rimandi TSK con almeno 3 voti (esclusi quelli segnalati dai controlli, come Giona letto come Giovanni) e ${n(D.esv.jump.n)} rimandi ESV, sui ${n(D.tsk3.full.n_verses)} versetti della KJV. Un rimando a un intervallo di versetti è attaccato al primo.</p>
+<p><b>Forma della coda.</b> Metodo di Clauset, Shalizi e Newman (2009) con la libreria <code>powerlaw</code>: stima di massima verosimiglianza della legge di potenza discreta, soglia x<sub>min</sub> scelta minimizzando la distanza di Kolmogorov-Smirnov (TSK ${D.tsk3.tail.xmin}, ESV ${D.esv.tail.xmin}; esponente α = ${n(D.tsk3.tail.alpha, 2)} e ${n(D.esv.tail.alpha, 2)}), poi test del rapporto di verosimiglianza normalizzato di Vuong contro lognormale, legge di potenza troncata ed esponenziale. R &lt; 0 significa che l'alternativa spiega meglio i dati.</p>
+<p><b>Intero campo.</b> Poisson e binomiale negativa NB2 (varianza = μ + αμ²) stimate per massima verosimiglianza su tutti i versetti, zeri compresi; AIC ${n(D.tsk3.full.aic_poisson)} contro ${n(D.tsk3.full.aic_nb)} nel TSK.</p>
+<p><b>Regressione.</b> NB2 con log(numero di parole KJV), genere (8 gruppi, riferimento Pentateuco) e posizione relativa nel libro con un termine quadratico. Gli effetti sono rapporti di tassi (IRR) con intervalli di confidenza al 95%.</p>
+<p><b>Distanza.</b> Differenza tra gli indici dei due versetti nell'ordine canonico KJV (Genesi 1:1 = 0, Apocalisse 22:21 = 31.101). Direzione: dal versetto su cui il rimando è scritto a quello indicato.</p>`;
+</script>
