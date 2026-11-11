@@ -1,0 +1,16 @@
+Dove: https://api.esv.org  →  crea un account, poi "Create an Application"
+
+NOME (Name / Application name)
+Bible Network
+
+DESCRIZIONE (Description)
+Personal, non-commercial Bible study tool used by one person only. It shows how the verses of a chapter connect to the rest of Scripture (cross-references), so that while reading e.g. Romans 1 I can see and follow the related passages. ESV text and cross-references are displayed with the required "ESV" attribution and copyright notice; nothing is sold, advertised or redistributed.
+
+SITO (Website / URL), se obbligatorio
+https://davins90.github.io
+
+TIPO DI USO, se chiesto (Use / Purpose)
+Personal study, non-commercial
+
+COMMERCIALE? (Commercial use)
+No

@@ -1,0 +1,434 @@
+<title>Mappa di Romani</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
+<style>
+/* Layout: mappa del canone in alto (66 libri), sotto il capitolo a sinistra e il pannello dei collegamenti a destra; su telefono il pannello si apre sotto il versetto scelto. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #151a21;
+  --muted: #576070;
+  --line: #e1e4ea;
+  --soft: #eef1f5;
+  --sel: #e8f0fb;
+  --ot: #eb6834;
+  --nt: #2a78d6;
+  --ot-soft: #fdeee6;
+  --nt-soft: #e7f0fb;
+  --serif: "Literata", Georgia, "Times New Roman", serif;
+  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317; --surface: #191c21; --ink: #eceef1; --muted: #a2aab6; --line: #2b3038; --soft: #22262d; --sel: #1c2a3d;
+    --ot: #d95926; --nt: #3987e5; --ot-soft: #33221a; --nt-soft: #1a2738; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317; --surface: #191c21; --ink: #eceef1; --muted: #a2aab6; --line: #2b3038; --soft: #22262d; --sel: #1c2a3d;
+  --ot: #d95926; --nt: #3987e5; --ot-soft: #33221a; --nt-soft: #1a2738; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 28px; }
+header.top { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { margin: 0; font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 5vw, 44px); line-height: 1.1; text-wrap: balance; }
+.stats { color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--ink); font-weight: 600; }
+.chapters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chapters button { font: inherit; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; min-width: 40px; height: 40px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.chapters button:hover { border-color: var(--muted); }
+.chapters button:focus-visible { outline: 2px solid var(--nt); outline-offset: 2px; }
+.chapters button[aria-current="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); font-weight: 600; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.mapcard { padding: 18px 18px 12px; display: flex; flex-direction: column; gap: 10px; }
+.maphead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; }
+.maphead h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.legend { display: flex; gap: 14px; align-items: center; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); cursor: pointer; min-height: 32px; }
+.toggle input { width: 16px; height: 16px; accent-color: var(--nt); margin: 0; }
+#chart { position: relative; width: 100%; }
+#chart svg { display: block; width: 100%; height: 210px; overflow: visible; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--surface); font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px; font-variant-numeric: tabular-nums; }
+.filter { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.chip-btn { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--soft); color: var(--ink); border-radius: 999px; padding: 4px 10px; cursor: pointer; min-height: 30px; }
+.chip-btn:hover { border-color: var(--muted); }
+details.table { font-size: 13px; color: var(--muted); }
+details.table summary { cursor: pointer; padding: 4px 0; }
+.tbl { overflow-x: auto; max-height: 260px; overflow-y: auto; margin-top: 6px; }
+.tbl table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { text-align: left; padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); color: var(--ink); font-weight: 400; }
+.tbl th { color: var(--muted); font-weight: 600; }
+
+.graphbox { position: relative; overflow-x: auto; }
+.graphbox svg { display: block; }
+.graphbox .node { cursor: pointer; }
+.graphbox .node:focus-visible { outline: none; }
+.graphbox .node:focus-visible circle { stroke: var(--ink); stroke-width: 2; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.chapter { padding: 22px 22px 26px; display: flex; flex-direction: column; gap: 2px; }
+.chapter h3 { margin: 18px 0 6px 8px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.chapter h3:first-child { margin-top: 0; }
+.verse { all: unset; display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-family: var(--serif); font-size: 17px; line-height: 1.6; }
+.verse:hover { background: var(--soft); }
+.verse:focus-visible { outline: 2px solid var(--nt); outline-offset: 1px; }
+.verse[aria-pressed="true"] { background: var(--sel); }
+.verse.dim { opacity: .38; }
+.vn { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.count { font-family: var(--sans); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 22px; text-align: right; }
+.count.has { color: var(--ink); font-weight: 600; }
+
+.panel { padding: 22px; display: flex; flex-direction: column; gap: 20px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); overflow-y: auto; }
+.panel .ref-title { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.panel .lead { margin: 4px 0 0; font-family: var(--serif); font-size: 19px; line-height: 1.55; }
+.group { display: flex; flex-direction: column; gap: 10px; }
+.phrase { font-size: 13px; color: var(--muted); }
+.phrase q { font-family: var(--serif); font-style: italic; color: var(--ink); font-size: 15px; quotes: "“" "”"; }
+.link { display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 12px; }
+.bar { border-radius: 2px; }
+.link .r { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tag { font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 1px 7px; border-radius: 999px; color: var(--ink); }
+.tag.ot { background: var(--ot-soft); }
+.tag.nt { background: var(--nt-soft); }
+.votes { font-size: 12px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.link p { margin: 3px 0 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.55; }
+.link sup { font-family: var(--sans); font-size: 10px; color: var(--muted); margin-right: 2px; }
+.more { all: unset; cursor: pointer; font-size: 13px; color: var(--nt); margin-top: 4px; }
+.more:focus-visible { outline: 2px solid var(--nt); }
+.sep { border: 0; border-top: 1px solid var(--line); margin: 0; }
+.empty { color: var(--muted); font-size: 14px; margin: 0; }
+.obhead { display: flex; flex-direction: column; gap: 2px; }
+.obhead b { font-size: 14px; }
+.obhead span { font-size: 13px; color: var(--muted); }
+footer { font-size: 12px; color: var(--muted); line-height: 1.6; max-width: 80ch; }
+
+@media (max-width: 860px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .chapter { padding: 14px 10px 18px; }
+  .panel { position: static; max-height: none; overflow: visible; margin: 6px 0 12px; border-color: var(--nt); }
+  .verse { font-size: 16.5px; }
+}
+@media (prefers-reduced-motion: no-preference) { .verse { transition: background .12s, opacity .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Lettera ai Romani · NLT</span>
+    <h1 id="h1">Romani 1</h1>
+    <nav class="chapters" id="chapters" aria-label="Scegli il capitolo"></nav>
+    <span class="stats" id="stats"></span>
+  </header>
+
+  <section class="card mapcard" aria-labelledby="maptitle">
+    <div class="maphead">
+      <h2 id="maptitle">Dove si collega il capitolo, libro per libro</h2>
+      <div class="legend">
+        <span><span class="sw" style="background: var(--ot)"></span>Antico Testamento</span>
+        <span><span class="sw" style="background: var(--nt)"></span>Nuovo Testamento</span>
+        <label class="toggle" for="ob"><input type="checkbox" id="ob">Aggiungi OpenBible</label>
+      </div>
+    </div>
+    <div id="chart"></div>
+    <div class="filter" id="filter" hidden></div>
+    <details class="table">
+      <summary>Vedi i numeri in tabella</summary>
+      <div class="tbl" id="tbl"></div>
+    </details>
+  </section>
+
+  <section class="card mapcard" aria-labelledby="graphtitle">
+    <div class="maphead">
+      <h2 id="graphtitle">Quale versetto parla con quale libro</h2>
+      <span class="legend">Tocca un versetto o un libro per evidenziarne i collegamenti. Lo spessore indica quanti rimandi.</span>
+    </div>
+    <div class="graphbox" id="graph"></div>
+  </section>
+
+  <div class="main">
+    <section class="card chapter" id="chapter" aria-label="Testo del capitolo"></section>
+    <aside class="card panel" id="panel" aria-live="polite"></aside>
+  </div>
+
+  <footer>
+    Testo: Holy Bible, New Living Translation, © 1996, 2004, 2015 Tyndale House Foundation. Collegamenti principali: rimandi editoriali della ESV® (English Standard Version), © Crossway, esv.org; le frasi tra virgolette sono citazioni ESV. Collegamenti aggiuntivi: OpenBible.info (CC BY), con i voti degli utenti. Uso personale, non commerciale.
+  </footer>
+</div>
+
+<script>
+const D = __DATA__;
+const B = Object.fromEntries(D.books.map((b, i) => [b.osis, { ...b, i }]));
+const state = { ch: 1, verse: 17, ob: false, book: null };
+const C = () => D.chapters[state.ch];
+
+function label(key) {
+  const [a, b] = key.split("-");
+  const [bk, c, v] = a.split(".");
+  let s = `${B[bk].ab} ${c}:${v}`;
+  if (b) { const [c2, v2] = b.split("."); s += c2 === c ? `–${v2}` : `–${c2}:${v2}`; }
+  return s;
+}
+const bookOf = k => k.split(".")[0];
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function countsFor(withOb) {
+  const c = {};
+  for (const [k, n] of Object.entries(C().countEsv)) c[k] = n;
+  if (withOb) for (const [k, n] of Object.entries(C().countExtra)) c[k] = (c[k] || 0) + n;
+  return c;
+}
+function verseLinks(v) {
+  const groups = (C().esv[v] || []).map(g => ({ phrase: g.phrase, refs: g.refs.filter(r => !state.book || bookOf(r) === state.book) })).filter(g => g.refs.length);
+  const extra = state.ob ? (C().extra[v] || []).filter(x => !state.book || bookOf(x.ref) === state.book) : [];
+  return { groups, extra, n: groups.reduce((s, g) => s + g.refs.length, 0) + extra.length };
+}
+
+/* ---------- mappa ---------- */
+const chart = document.getElementById("chart");
+const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
+function drawChart() {
+  const counts = countsFor(state.ob);
+  const W = chart.clientWidth, H = 210, padL = 28, padT = 22, padB = 30;
+  const n = D.books.length, band = (W - padL) / n, bw = Math.max(2, band - 2);
+  const max = Math.max(...Object.values(counts));
+  const top = Math.ceil(max / 10) * 10;
+  const y = v => padT + (H - padT - padB) * (1 - v / top);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Numero di collegamenti da ${D.bookIt} ${state.ch} verso ciascun libro della Bibbia, in ordine canonico">`;
+  for (let t = 0; t <= top; t += 10) {
+    s += `<line x1="${padL}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<text x="${padL - 6}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${t}</text>`;
+  }
+  const xNT = padL + 39 * band;
+  s += `<line x1="${xNT - 1}" x2="${xNT - 1}" y1="${padT - 14}" y2="${H - padB + 4}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  s += `<text x="${padL + 2}" y="${H - 8}" font-size="11" fill="var(--muted)">Genesi → Malachia</text>`;
+  s += `<text x="${xNT + 4}" y="${H - 8}" font-size="11" fill="var(--muted)">Matteo → Apocalisse</text>`;
+  const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(e => e[0]);
+  D.books.forEach((b, i) => {
+    const v = counts[b.osis] || 0, x = padL + i * band + 1;
+    const col = b.nt ? "var(--nt)" : "var(--ot)";
+    const faded = state.book && state.book !== b.osis ? ' opacity="0.3"' : "";
+    if (v > 0) {
+      const yt = y(v), yb = y(0), r = Math.min(4, bw / 2, yb - yt);
+      s += `<path d="M${x},${yb} L${x},${yt + r} Q${x},${yt} ${x + r},${yt} L${x + bw - r},${yt} Q${x + bw},${yt} ${x + bw},${yt + r} L${x + bw},${yb} Z" fill="${col}"${faded}/>`;
+      if (ranked.includes(b.osis)) s += `<text x="${x + bw / 2}" y="${yt - 5}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${b.ab}</text>`;
+    } else {
+      s += `<rect x="${x}" y="${y(0) - 1}" width="${bw}" height="1" fill="var(--line)"/>`;
+    }
+    s += `<rect class="hit" data-b="${b.osis}" x="${padL + i * band}" y="${padT - 14}" width="${band}" height="${H - padT - padB + 14}" fill="transparent" style="cursor:${v ? "pointer" : "default"}"/>`;
+  });
+  s += `</svg>`;
+  chart.innerHTML = s; chart.appendChild(tip);
+  chart.querySelectorAll(".hit").forEach(h => {
+    const b = B[h.dataset.b], v = counts[b.osis] || 0;
+    h.addEventListener("mouseenter", () => {
+      tip.textContent = `${b.it} · ${v} ${v === 1 ? "collegamento" : "collegamenti"}`;
+      tip.style.left = (parseFloat(h.getAttribute("x")) + band / 2) + "px";
+      tip.style.top = y(v) + "px"; tip.hidden = false;
+    });
+    h.addEventListener("mouseleave", () => { tip.hidden = true; });
+    h.addEventListener("click", () => { if (v) setBook(state.book === b.osis ? null : b.osis); });
+  });
+  const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  document.getElementById("tbl").innerHTML = `<table><thead><tr><th>Libro</th><th>Testamento</th><th>Collegamenti</th></tr></thead><tbody>${rows.map(([k, v]) => `<tr><td>${B[k].it}</td><td>${B[k].nt ? "Nuovo" : "Antico"}</td><td>${v}</td></tr>`).join("")}</tbody></table>`;
+}
+
+/* ---------- grafo versetti ↔ libri ---------- */
+const graph = document.getElementById("graph");
+const gtip = document.createElement("div"); gtip.className = "tip"; gtip.hidden = true;
+function edgeWeights() {
+  const w = {};
+  const add = (v, k) => { const id = `${v}|${bookOf(k)}`; w[id] = (w[id] || 0) + 1; };
+  for (const [v, gs] of Object.entries(C().esv)) gs.forEach(g => g.refs.forEach(r => add(v, r)));
+  if (state.ob) for (const [v, xs] of Object.entries(C().extra)) xs.forEach(x => add(v, x.ref));
+  return w;
+}
+function drawGraph() {
+  const w = edgeWeights();
+  const bookTot = {}, verseTot = {};
+  for (const [id, n] of Object.entries(w)) {
+    const [v, b] = id.split("|");
+    bookTot[b] = (bookTot[b] || 0) + n; verseTot[v] = (verseTot[v] || 0) + n;
+  }
+  const books = D.books.filter(b => bookTot[b.osis]);
+  const W = Math.max(graph.clientWidth, 620), row = 18, padT = 26, gap = 22;
+  const xL = 64, xR = W - 170;
+  // destra: libri AT, pausa, libri NT
+  const by = {}; let yy = padT;
+  books.forEach((b, i) => { if (i > 0 && b.nt && !books[i - 1].nt) yy += gap; by[b.osis] = yy; yy += row; });
+  const H = Math.max(yy + 10, 0);
+  // sinistra: 32 versetti distribuiti sulla stessa altezza, con una pausa tra le sezioni
+  const heads = Object.keys(C().heads).map(Number).sort((a, b) => a - b);
+  const nGaps = heads.filter(h => h !== C().verses[0][0]).length, span = H - padT - 10 - nGaps * gap;
+  const step = span / (C().verses.length - 1);
+  const vy = {}; let g = 0;
+  C().verses.forEach(([v], i) => { if (i > 0 && heads.includes(v)) g++; vy[v] = padT + i * step + g * gap; });
+  const maxW = Math.max(...Object.values(w));
+  const sw = n => 1 + 4 * (n / maxW);
+  const rNode = (n, m) => 3 + 5 * Math.sqrt(n / m);
+  const maxB = Math.max(...Object.values(bookTot)), maxV = Math.max(...Object.values(verseTot));
+  const active = id => {
+    const [v, b] = id.split("|");
+    return state.book ? b === state.book : +v === state.verse;
+  };
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafo che collega i versetti di ${D.bookIt} ${state.ch} ai libri della Bibbia a cui rimandano">`;
+  s += `<text x="${xL}" y="12" font-size="11" fill="var(--muted)" text-anchor="middle">${D.bookIt} ${state.ch}</text>`;
+  s += `<text x="${xR}" y="12" font-size="11" fill="var(--muted)">Libri collegati</text>`;
+  const edges = Object.entries(w).sort((a, b) => active(a[0]) - active(b[0]));
+  edges.forEach(([id, n]) => {
+    const [v, b] = id.split("|"), y1 = vy[v], y2 = by[b], mx = (xL + xR) / 2;
+    const on = active(id);
+    const col = B[b].nt ? "var(--nt)" : "var(--ot)";
+    const d = `M${xL + 8},${y1} C${mx},${y1} ${mx},${y2} ${xR - 8},${y2}`;
+    s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="${sw(n)}" stroke-opacity="${on ? 0.9 : 0.12}" stroke-linecap="round"/>`;
+    s += `<path class="ehit" data-id="${id}" data-n="${n}" d="${d}" fill="none" stroke="transparent" stroke-width="10"/>`;
+  });
+  C().verses.forEach(([v]) => {
+    const n = verseTot[v] || 0, sel = v === state.verse;
+    const dim = state.book && !w[`${v}|${state.book}`];
+    s += `<g class="node" tabindex="0" role="button" data-v="${v}" aria-label="Versetto ${v}, ${n} collegamenti" opacity="${dim ? 0.35 : 1}">`;
+    s += `<rect x="0" y="${vy[v] - 8}" width="${xL + 14}" height="16" fill="transparent"/>`;
+    s += `<text x="${xL - 14}" y="${vy[v] + 4}" font-size="11.5" text-anchor="end" fill="${sel ? "var(--ink)" : "var(--muted)"}" font-weight="${sel ? 600 : 400}">${state.ch}:${v}</text>`;
+    s += n ? `<circle cx="${xL}" cy="${vy[v]}" r="${rNode(n, maxV)}" fill="${sel ? "var(--ink)" : "var(--muted)"}" stroke="var(--surface)" stroke-width="2"/>` : `<circle cx="${xL}" cy="${vy[v]}" r="2.5" fill="var(--line)"/>`;
+    s += `</g>`;
+  });
+  books.forEach(b => {
+    const n = bookTot[b.osis], sel = state.book === b.osis;
+    const dim = !state.book && !w[`${state.verse}|${b.osis}`];
+    s += `<g class="node" tabindex="0" role="button" data-b="${b.osis}" aria-label="${b.it}, ${n} collegamenti" opacity="${state.book && !sel ? 0.45 : 1}">`;
+    s += `<rect x="${xR - 10}" y="${by[b.osis] - 8}" width="${W - xR + 10}" height="16" fill="transparent"/>`;
+    s += `<circle cx="${xR}" cy="${by[b.osis]}" r="${rNode(n, maxB)}" fill="${b.nt ? "var(--nt)" : "var(--ot)"}" stroke="var(--surface)" stroke-width="2"/>`;
+    s += `<text x="${xR + 14}" y="${by[b.osis] + 4}" font-size="12" fill="var(--ink)" font-weight="${sel || !dim ? 600 : 400}" opacity="${dim ? 0.7 : 1}">${b.it} <tspan fill="var(--muted)" font-weight="400">${n}</tspan></text>`;
+    s += `</g>`;
+  });
+  s += `</svg>`;
+  graph.innerHTML = s; graph.appendChild(gtip);
+  graph.querySelectorAll(".node").forEach(nd => {
+    const act = () => {
+      if (nd.dataset.v) { state.verse = +nd.dataset.v; if (state.book && !w[`${state.verse}|${state.book}`]) state.book = null; setBook(state.book); }
+      else setBook(state.book === nd.dataset.b ? null : nd.dataset.b);
+    };
+    nd.addEventListener("click", act);
+    nd.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); } });
+  });
+  graph.querySelectorAll(".ehit").forEach(p => {
+    p.addEventListener("mousemove", e => {
+      const [v, b] = p.dataset.id.split("|"), n = +p.dataset.n, r = graph.getBoundingClientRect();
+      gtip.textContent = `Rm ${state.ch}:${v} → ${B[b].it} · ${n} ${n === 1 ? "rimando" : "rimandi"}`;
+      gtip.style.left = (e.clientX - r.left + graph.scrollLeft) + "px"; gtip.style.top = (e.clientY - r.top) + "px"; gtip.hidden = false;
+    });
+    p.addEventListener("mouseleave", () => { gtip.hidden = true; });
+    p.addEventListener("click", () => { const [v, b] = p.dataset.id.split("|"); state.verse = +v; setBook(b); });
+  });
+}
+
+function setBook(b) {
+  state.book = b;
+  const f = document.getElementById("filter");
+  if (b) {
+    f.hidden = false;
+    f.innerHTML = `Solo i collegamenti verso <b style="color:var(--ink)">${B[b].it}</b> <button class="chip-btn" id="clr" type="button">Mostra tutti</button>`;
+    document.getElementById("clr").onclick = () => setBook(null);
+    const first = C().verses.map(r => r[0]).find(v => verseLinks(v).n > 0);
+    if (verseLinks(state.verse).n === 0 && first) state.verse = first;
+  } else f.hidden = true;
+  render();
+}
+
+/* ---------- capitolo ---------- */
+const chapter = document.getElementById("chapter");
+const panel = document.getElementById("panel");
+const narrow = window.matchMedia("(max-width: 860px)");
+
+function drawChapter() {
+  let h = "";
+  for (const [v, t] of C().verses) {
+    if (C().heads[v]) h += `<h3>${esc(C().heads[v])}</h3>`;
+    const n = verseLinks(v).n;
+    const dim = state.book && n === 0 ? " dim" : "";
+    h += `<button class="verse${dim}" type="button" data-v="${v}" aria-pressed="${v === state.verse}"><span class="vn">${v}</span><span>${esc(t)}</span><span class="count${n ? " has" : ""}" aria-label="${n} collegamenti">${n || ""}</span></button>`;
+  }
+  chapter.innerHTML = h;
+  chapter.querySelectorAll(".verse").forEach(b => b.addEventListener("click", () => { state.verse = +b.dataset.v; render(); if (narrow.matches) panel.scrollIntoView({ block: "nearest", behavior: "smooth" }); }));
+}
+
+function linkHtml(key, extraInfo) {
+  const ps = D.texts[key] || [];
+  const nt = B[bookOf(key)].nt;
+  const shown = ps.slice(0, 3);
+  const body = shown.map(([n, t]) => (ps.length > 1 ? `<sup>${n}</sup>` : "") + esc(t)).join(" ");
+  const more = ps.length > 3 ? `<button class="more" type="button" data-k="${key}">Mostra tutti i ${ps.length} versetti</button>` : "";
+  return `<div class="link"><span class="bar" style="background:${nt ? "var(--nt)" : "var(--ot)"}"></span><div>
+    <div class="r">${label(key)} <span class="tag ${nt ? "nt" : "ot"}">${nt ? "NT" : "AT"}</span>${extraInfo || ""}</div>
+    <p data-body="${key}">${body}</p>${more}</div></div>`;
+}
+
+function drawPanel() {
+  const v = state.verse, text = C().verses.find(r => r[0] === v)[1];
+  const { groups, extra } = verseLinks(v);
+  let h = `<div><div class="ref-title">${D.bookIt} ${state.ch}:${v}</div><p class="lead">${esc(text)}</p></div>`;
+  if (!groups.length && !extra.length) {
+    h += `<p class="empty">${state.book ? `Nessun collegamento verso ${B[state.book].it} da questo versetto.` : state.ob ? "Nessun collegamento per questo versetto." : "La ESV non indica rimandi per questo versetto. Prova ad aggiungere OpenBible."}</p>`;
+  }
+  groups.forEach(g => {
+    h += `<hr class="sep"><div class="group"><div class="phrase">Su <q>${esc(g.phrase)}…</q> <span>(ESV)</span></div>${g.refs.map(r => linkHtml(r)).join("")}</div>`;
+  });
+  if (extra.length) {
+    h += `<hr class="sep"><div class="group"><div class="obhead"><b>Altri collegamenti</b><span>Da OpenBible.info, ordinati per voti degli utenti</span></div>${extra.map(x => linkHtml(x.ref, `<span class="votes">${x.votes} voti</span>`)).join("")}</div>`;
+  }
+  panel.innerHTML = h;
+  panel.querySelectorAll(".more").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.k;
+    panel.querySelector(`[data-body="${CSS.escape(k)}"]`).innerHTML = D.texts[k].map(([n, t]) => `<sup>${n}</sup>${esc(t)}`).join(" ");
+    b.remove();
+  }));
+}
+
+function placePanel() {
+  if (narrow.matches) {
+    const sel = chapter.querySelector(`.verse[data-v="${state.verse}"]`);
+    if (sel) sel.after(panel);
+  } else if (panel.parentElement !== document.querySelector(".main")) {
+    document.querySelector(".main").appendChild(panel);
+  }
+}
+
+function bestVerse() {
+  if (state.ch === 1 && C().esv[17]) return 17;
+  let best = C().verses[0][0], n = -1;
+  for (const [v] of C().verses) { const k = (C().esv[v] || []).reduce((s, g) => s + g.refs.length, 0); if (k > n) { n = k; best = v; } }
+  return best;
+}
+function setChapter(ch) {
+  state.ch = ch; state.book = null; state.verse = bestVerse();
+  try { history.replaceState(null, "", "#c" + ch); } catch (e) {}
+  render();
+}
+function drawNav() {
+  const nav = document.getElementById("chapters");
+  nav.innerHTML = Object.keys(D.chapters).map(Number).sort((a, b) => a - b)
+    .map(c => `<button type="button" data-c="${c}" aria-current="${c === state.ch}" aria-label="Capitolo ${c}">${c}</button>`).join("");
+  nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => setChapter(+b.dataset.c)));
+  document.getElementById("h1").textContent = `${D.bookIt} ${state.ch}`;
+}
+
+function render() {
+  drawNav();
+  drawChart(); drawGraph(); drawChapter(); drawPanel(); placePanel();
+  const nEsv = Object.values(C().countEsv).reduce((a, b) => a + b, 0);
+  const nOb = Object.values(C().countExtra).reduce((a, b) => a + b, 0);
+  const books = Object.keys(countsFor(state.ob)).length;
+  const verses = C().verses.filter(([v]) => verseLinks(v).n > 0).length;
+  document.getElementById("stats").innerHTML = `<b>${nEsv + (state.ob ? nOb : 0)}</b> collegamenti${state.ob ? ` (${nEsv} ESV + ${nOb} OpenBible)` : " curati dalla ESV"} · <b>${verses}</b> versetti su ${C().verses.length} · <b>${books}</b> libri della Bibbia`;
+}
+
+document.getElementById("ob").addEventListener("change", e => { state.ob = e.target.checked; render(); });
+narrow.addEventListener("change", placePanel);
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawChart(); drawGraph(); }, 120); });
+const fromHash = /^#c(\d+)$/.exec(location.hash);
+if (fromHash && D.chapters[fromHash[1]]) { state.ch = +fromHash[1]; state.verse = bestVerse(); }
+render();
+</script>

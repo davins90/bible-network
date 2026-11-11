@@ -1,0 +1,22 @@
+# secrets
+.env
+*.key.json
+
+# dependencies and builds
+node_modules/
+app/dist/
+network/.venv/
+__pycache__/
+*.pyc
+
+# generated or re-downloadable data (see README)
+network/out/
+network/atlante.html
+data/kjv/
+data/bsb/
+*.log
+
+# licensed data, kept in the private bucket gs://dani-lab-507314-bible-network-data (see README)
+app/public/data/refs/
+explorer/romani_data.json
+explorer/romani1.html

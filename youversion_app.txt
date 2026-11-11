@@ -1,0 +1,5 @@
+NOME (Name)
+Bible Network
+
+DESCRIZIONE (Description)
+Personal, daily Bible reading tool. Each morning it sends me a single email with the day's chapter plus one curated cross-reference between the Old and New Testaments, taken from open datasets (OpenBible.info, Treasury of Scripture Knowledge). Used by one person only; the text is not republished or redistributed.

@@ -1,0 +1,72 @@
+name: Deploy app to Cloud Run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check and build
+        run: npm run build
+      - name: Public data files present
+        run: test -s public/data/meta.json && test -s public/data/map.json && test -s public/data/text.json
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/615683241662/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: github-deploy@dani-lab-507314.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@v2
+      # ESV cross-references are not redistributed in this public repository: they live in a private bucket
+      - name: Fetch licensed data
+        run: |
+          mkdir -p app/public/data/refs
+          gcloud storage rsync gs://dani-lab-507314-bible-network-data/app-data/refs app/public/data/refs --recursive
+          test $(ls app/public/data/refs/*.json | wc -l) -eq 66
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy bible-network \
+            --source app \
+            --region europe-west8 \
+            --project dani-lab-507314 \
+            --service-account bible-network-run@dani-lab-507314.iam.gserviceaccount.com \
+            --allow-unauthenticated \
+            --memory 256Mi \
+            --max-instances 3 \
+            --quiet
+      - name: Smoke test
+        run: |
+          URL=$(gcloud run services describe bible-network --region europe-west8 --project dani-lab-507314 --format="value(status.url)")
+          curl -fsS "$URL/" | grep -q "Bible Network"
+          curl -fsS -o /dev/null "$URL/data/meta.json"
+          curl -fsS -o /dev/null "$URL/data/refs/44.json"
+          echo "online: $URL"
