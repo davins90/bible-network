@@ -51,7 +51,10 @@ bucket **prima** del push e rilancia il deploy).
      posteriori di appartenenza per ogni capitolo, capitoli "di confine", gerarchia dei gruppi;
    - confronto con Louvain (5 gruppi TSK, 9 ESV) e con i generi; verificare gruppi definiti da **ruoli** (es.
      capitoli del NT che citano Salmi e Profeti allo stesso modo);
-   - se regge, sostituire le comunità Louvain nell'app (suggerimento "Esplora", equilibrio nel diario).
+   - se regge, sostituire le comunità Louvain nell'app (suggerimento "Esplora", equilibrio nel diario);
+   - **colorare l'elica per regione** (idea piaciuta a Daniele il 12/11): usare il livello alto della gerarchia
+     (pochi gruppi, così i colori restano distinguibili) oppure evidenziare una regione alla volta sul resto in grigio;
+     i capitoli "di confine" con un tratto diverso.
 2. **Variante continua in PyMC** per confronto (l'SBM con gruppi discreti non è adatto a NUTS):
    - *mixed membership Poisson* (Ball, Karrer e Newman 2011), fattorizzazione Gamma–Poisson con NUTS o ADVI;
    - in alternativa *latent space model* (Hoff, Raftery e Handcock 2002): posizioni latenti con incertezza.
