@@ -380,6 +380,26 @@ Non c'è un'AUC da calcolare: si potrà valutare solo con l'uso, per esempio la 
 - Comunità di Louvain senza misura di incertezza.
 - Gli embedding vedono parole e senso letterale (in inglese, KJV), non la teologia.
 
+### Prossimi passi
+
+1. **Stochastic block model bayesiano** al posto di Louvain. Modello generativo *degree-corrected*
+   (Karrer e Newman 2011):
+
+   $$A_{ij} \sim \text{Poisson}\!\left(\theta_i\,\theta_j\,\omega_{z_i z_j}\right),$$
+
+   con $z_i$ il gruppo latente del capitolo $i$, $\omega$ la matrice di intensità tra gruppi e $\theta_i$ la
+   propensione del capitolo (necessaria visti i gradi molto eterogenei, sezione 3). Inferenza bayesiana sulla
+   partizione con MCMC merge-split e numero di gruppi scelto dalla lunghezza minima di descrizione, in versione
+   gerarchica (*nested SBM*, Peixoto), con `graph-tool`. Rispetto a Louvain dà l'incertezza (probabilità a posteriori
+   di appartenenza, capitoli "di confine"), non trova struttura dove non c'è e riconosce gruppi definiti dal ruolo
+   (con chi si collegano) e non solo dalla densità interna.
+2. **Varianti continue in PyMC**, per confronto: i gruppi discreti dell'SBM non si prestano a NUTS, ma una
+   *mixed membership* Gamma–Poisson (Ball, Karrer e Newman 2011) o un *latent space model* (Hoff, Raftery e
+   Handcock 2002) sì.
+3. **Valutare l'app con l'uso** (collegamenti in evidenza aperti e salvati, suggerimenti seguiti), poi gli account
+   (Firebase Auth + Firestore).
+4. Controllo dell'errore Giona/Giovanni sul testo originale del TSK.
+
 ---
 
 ## 10. Riprodurre tutto

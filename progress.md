@@ -1,52 +1,74 @@
 # Bible Network: a che punto siamo
 
-*Aggiornato il 29 ottobre 2026, notte. Lo storico completo della ricerca è in `info.md`.*
+*Aggiornato il 12 novembre 2026, notte. Metodi e risultati in dettaglio nel `README.md`; lo storico della ricerca
+iniziale (fonti, licenze, ottobre 2026) è in `info.md`.*
 
 ## In una riga
-Un esploratore personale delle relazioni tra versetti: leggi un capitolo in NLT e vedi con cosa si collega nel resto della Bibbia.
+Una web app per esplorare la Bibbia come rete di rimandi mentre si legge su YouVersion, più un laboratorio di analisi
+statistica di due tradizioni di rimandi (TSK 1830 ed ESV 2001).
 
-**Pagina:** https://claude.ai/artifact/35LjnLL8T4eMRPyKH3JR5A (privata; `#c8` apre direttamente il capitolo 8)
+## Obiettivi (concordati l'11/11/2026)
+1. **Continuità**: tornare ogni giorno a leggere e segnare.
+2. **Comprensione**: trovare in meno di un minuto uno o due collegamenti che fanno vedere qualcosa di nuovo nel capitolo.
+3. **Memoria**: diario di letture, collegamenti salvati e note.
 
-## Cosa c'è
-- **Romani 1–16**, con un selettore dei capitoli.
-- **Mappa a barre** dei 66 libri (AT arancio, NT blu): quanti collegamenti partono dal capitolo verso ciascun libro. Un clic su un libro filtra la pagina su quel libro.
-- **Grafo a due colonne versetti ↔ libri**: lo spessore delle linee indica il numero di rimandi; un clic su un versetto o un libro lo evidenzia.
-- **Testo NLT** del capitolo con i titoli di sezione e il numero di collegamenti per versetto.
-- **Pannello del versetto**: i rimandi ESV raggruppati per frase (per esempio su "The righteous shall live by" → Ab 2:4, Gal 3:11, Eb 10:38), ognuno con il testo NLT.
-- **Interruttore OpenBible**: fino a 4 collegamenti in più per versetto (almeno 10 voti, esclusi quelli già nella ESV).
+Le analisi che non servono a questi obiettivi restano nel laboratorio (`network/`), non nell'app.
 
-Numeri di Romani: 1.697 rimandi ESV e 1.740 passi con testo NLT, nessuno mancante.
+## Cosa c'è online
+| Cosa | Dove |
+|---|---|
+| Web app | https://bible-network-615683241662.europe-west8.run.app (Cloud Run `bible-network`, progetto `dani-lab-507314`) |
+| Repository (pubblico) | https://github.com/davins90/bible-network |
+| Atlante dei rimandi | https://claude.ai/artifact/8rC7dkv9i25EGz9ZAjUvM8 |
+| Come si distribuiscono i rimandi | https://claude.ai/artifact/9SdE8G977gwf3LXKfAeDGc |
+| Elica del canone (prototipo 3D) | https://claude.ai/artifact/2P1mAQc1ekNoCWTxeEdD1E |
+| Disco iperbolico (prototipo) | https://claude.ai/artifact/K9FfkfUFnRoAM3uBpszP17 |
 
-## Fonti scelte (e perché)
-| Cosa | Fonte | Note |
-|---|---|---|
-| Collegamenti principali | **ESV API** (Crossway), `include-crossrefs=true` | Rimandi editoriali curati, agganciati alla frase. Chiave in `.env` (`ESV_API_KEY`) |
-| Collegamenti extra | **OpenBible.info** (`data/cross_references.txt`) | ~340k, derivati dal TSK, con voti degli utenti, CC BY |
-| Testo | **NLT API** (Tyndale), `api.nlt.to` | Senza chiave, uso non commerciale |
+**Web app**: mappa a elica (3D su PC, "canone 2D" su telefono) con i capitoli letti accesi; scheda del capitolo con
+pulsanti YouVersion (NR06, NLT), "Segna come letto", due collegamenti **in evidenza** (eco e citazione, dal modello),
+rimandi ESV e TSK versetto per versetto con anteprima BSB; **cosa leggo dopo** (seguente, personalized PageRank,
+esplorazione); diario con statistiche, copertura della rete, collegamenti salvati con note, esporta/importa.
+I dati del lettore stanno nel browser (`localStorage`) dietro un'interfaccia `Backend` pronta per gli account.
 
-Scartate: YouVersion Platform API (in italiano solo Diodati 1885, NLT vietata), Bible Gateway e Bibleserver (nessuna API). La Nuova Riveduta 2006 c'è su bolls.life, ma senza licenza chiara.
+**Deploy**: push su `main` che tocca `app/` → GitHub Actions (lint, build, rimandi dal bucket privato, deploy con
+Workload Identity, smoke test). Dopo `network/export_app.py`: `infra/sync_licensed_data.sh` (carica i rimandi nel
+bucket **prima** del push e rilancia il deploy).
 
-## File
-- `explorer/build_data.py` + `explorer/books.py`: costruiscono i dati di un libro. Uso:
-  `cd explorer && python3 build_data.py Romans 1-16 ../data/cross_references.txt romani_data.json` (circa 10 minuti per Romani).
-- `explorer/template.html`: la pagina, con il segnaposto `__DATA__`.
-- `explorer/romani1.html`: la pagina finale (template + dati), quella pubblicata.
-- `explorer/romani_data.json`: i dati di Romani.
-- `.env`: chiavi ESV e YouVersion (non condividere).
-
-Per ripubblicare dopo una modifica: sostituire `__DATA__` nel template con il JSON, poi pubblicare `explorer/romani1.html` sullo stesso link.
+## Risultati principali (dettagli e numeri nel README)
+- L'ESV è in gran parte un sottoinsieme curato del TSK (70% dei rimandi ESV è nel TSK, 20% del TSK è nell'ESV); i
+  voti di OpenBible anticipano le scelte dei curatori (dal 7% al 36% per fascia di voti).
+- Gradi: binomiale negativa (miscela Gamma–Poisson) per tutti i versetti; coda pesante ma **non** scale-free
+  (lognormale o potenza troncata battono la legge di potenza).
+- Il TSK annota l'AT "in avanti" verso il NT; l'ESV segue di più le citazioni del NT.
+- Modello del collegamento in evidenza: gradient boosting, AUC 0,81 fuori campione per libro (0,67 con i soli voti),
+  ben calibrato.
 
 ## Prossimi passi
-1. **Metriche sul grafo** (proposte, non ancora fatte):
-   - quota AT per versetto e per capitolo, con un grafico della "forma" di Romani su 16 capitoli;
-   - concentrazione (entropia o Herfindahl): versetti "citazione" contro versetti "tema";
-   - osservato/atteso per libro con **shrinkage Gamma-Poisson**, per correggere i libri grandi come i Salmi;
-   - somiglianza di Jaccard tra versetti, da confrontare con i titoli di sezione NLT.
-2. **Secondo salto**: aprire un passo collegato (per esempio Abacuc 2:4) e vedere i suoi collegamenti.
-3. **Altri libri**: basta lanciare `build_data.py` con un altro nome inglese (per esempio `Hebrews 1-13`).
-4. Più avanti, sul grafo intero: PageRank, ponti tra AT e NT (betweenness), comunità tematiche.
+1. **Stochastic block model bayesiano** sul grafo dei capitoli (poi eventualmente dei versetti):
+   - `graph-tool` (Peixoto), versione *degree-corrected* e **gerarchica** (nested SBM); installazione con conda
+     (`conda install -c conda-forge graph-tool`), in un ambiente separato dal `.venv`;
+   - output: partizione con numero di gruppi scelto dai dati (lunghezza minima di descrizione), probabilità a
+     posteriori di appartenenza per ogni capitolo, capitoli "di confine", gerarchia dei gruppi;
+   - confronto con Louvain (5 gruppi TSK, 9 ESV) e con i generi; verificare gruppi definiti da **ruoli** (es.
+     capitoli del NT che citano Salmi e Profeti allo stesso modo);
+   - se regge, sostituire le comunità Louvain nell'app (suggerimento "Esplora", equilibrio nel diario).
+2. **Variante continua in PyMC** per confronto (l'SBM con gruppi discreti non è adatto a NUTS):
+   - *mixed membership Poisson* (Ball, Karrer e Newman 2011), fattorizzazione Gamma–Poisson con NUTS o ADVI;
+   - in alternativa *latent space model* (Hoff, Raftery e Handcock 2002): posizioni latenti con incertezza.
+3. **Usare l'app qualche giorno** con letture vere, poi valutare collegamenti in evidenza e suggerimenti
+   (quanti aperti, salvati, seguiti).
+4. **Account** (Firebase Auth + Firestore, come Eufemy): `switchBackend` in `app/src/store.ts` unisce già i dati locali.
+5. Aperti: controllo dell'errore Giona/Giovanni sul **testo originale del TSK**; risposta di **Crossway** sui rimandi ESV
+   (se negativa: togliere l'ESV dai dati dell'app).
 
-## Da ricordare
-- Non l'ho vista visualizzata: controllare la mappa e il grafo sul telefono.
-- Le chiavi ESV e YouVersion sono state incollate in chat: rigenerarle se serve.
-- Lezione della sessione: partire dalla cosa minima che serve allo scopo, non dall'architettura. Le idee "email quotidiana" e "app di lettura" sono state scartate.
+## Da fare a mano (Daniele)
+- Inviare la mail a Crossway (bozza in Gmail, destinatario da trovare).
+- Cancellare il repository privato `davins90/bible-network-old` (contiene ancora nella storia i dati con licenza).
+
+## File
+- `network/`: `data_checks.py`, `analyze.py`, `embed_kjv.py`, `compare.py`, `fetch_esv.py`, `esv_vs_tsk.py`,
+  `distributions.py`, `prototypes.py`, `highlight_model.py`, `export_app.py`, `run_all.sh`; pagine con
+  `build_page.py`, `build_dist.py`, `build_protos.py`. Ambiente: `network/.venv` (umap nel Python di sistema va in
+  segfault per TensorFlow).
+- `app/`: React + Vite; `src/recommend.ts` (PageRank personalizzato e copertura), `src/Helix3D.tsx` (three.js).
+- Chiavi in `.env` (ESV, YouVersion, non nel repository).
