@@ -54,7 +54,11 @@ bucket **prima** del push e rilancia il deploy).
    - se regge, sostituire le comunità Louvain nell'app (suggerimento "Esplora", equilibrio nel diario);
    - **colorare l'elica per regione** (idea piaciuta a Daniele il 12/11): usare il livello alto della gerarchia
      (pochi gruppi, così i colori restano distinguibili) oppure evidenziare una regione alla volta sul resto in grigio;
-     i capitoli "di confine" con un tratto diverso.
+     i capitoli "di confine" con un tratto diverso;
+   - variante preferita da Daniele: **due tinte sfumate**, tinta = Testamento (arancio AT, blu NT), luminosità =
+     regione. Massimo 3-4 gradazioni per tinta (livello alto della gerarchia SBM); regioni ordinate per posizione media
+     nel canone, così la gradazione segue la salita dell'elica; una regione che attraversa i Testamenti mantiene la
+     stessa luminosità nelle due tinte.
 2. **Variante continua in PyMC** per confronto (l'SBM con gruppi discreti non è adatto a NUTS):
    - *mixed membership Poisson* (Ball, Karrer e Newman 2011), fattorizzazione Gamma–Poisson con NUTS o ADVI;
    - in alternativa *latent space model* (Hoff, Raftery e Handcock 2002): posizioni latenti con incertezza.
