@@ -82,6 +82,9 @@ def span(ref):
 esv_targets = {k: set().union(*(span(r) for _, rs in g for r in rs)) for k, g in esv_by_verse.items()}
 tsk_by_verse = defaultdict(list)
 skip = quarantined()
+# probability that a modern curator would keep the reference (highlight_model.py)
+SCORES = json.load(open(OUT / "tsk_scores.json"))
+HIGHLIGHTS = json.load(open(OUT / "highlights.json"))
 with open(XREF) as f:
     next(f)
     for line in f:
@@ -91,8 +94,9 @@ with open(XREF) as f:
         key = parse(a)
         if key not in vid or span(b) & esv_targets.get(key, set()):
             continue
-        tsk_by_verse[key].append((int(votes), compact(b)))
+        tsk_by_verse[key].append((SCORES.get(f"{a}\t{b}", 0.0), int(votes), compact(b)))
 
+chapter_pos = {c: i for i, c in enumerate(sorted({(v["b"], v["c"]) for v in kjv}))}
 n_esv = n_tsk = 0
 for bi in range(66):
     book = {}
@@ -102,9 +106,11 @@ for bi in range(66):
             e = esv_by_verse.get((bi, ch, v), [])
             t = sorted(tsk_by_verse.get((bi, ch, v), []), reverse=True)[:TSK_MAX_PER_VERSE]
             if e or t:
-                verses[v] = {"e": e, "t": [[r, n] for n, r in t]}
+                verses[v] = {"e": e, "t": [[r, n, p] for p, n, r in t]}
                 n_esv += sum(len(rs) for _, rs in e)
                 n_tsk += len(t)
+        # highlighted connections of the chapter (they include ESV references, so they live with the licensed files)
+        verses["_h"] = HIGHLIGHTS[str(chapter_pos[(bi, ch)])]
         book[ch] = verses
     json.dump(book, open(DEST / "refs" / f"{bi:02d}.json", "w"), ensure_ascii=False, separators=(",", ":"))
 print(f"rimandi esportati: ESV {n_esv}, TSK in più {n_tsk}")
@@ -115,6 +121,16 @@ pts = {s: {p["id"]: p for p in n["chapters"]} for s, n in nets.items()}
 chapters = [(b, c) for b in range(66) for c in sorted(counts[b])]
 label = lambda b, c: f"{BOOKS[b][2]} {c}"  # noqa: E731
 index = {label(b, c): i for i, (b, c) in enumerate(chapters)}
+helix = json.load(open(OUT / "helix.json"))
+assert [(x["b"], x["c"]) for x in helix["chapters"]] == chapters
+# chapter graph (TSK >= 3 votes) for the "what to read next" random walk: top 40 neighbours by weight per chapter
+from graph import aggregate, load_source_edges  # noqa: E402
+cw = aggregate(load_source_edges("tsk3"), "chapter")
+nbrs = defaultdict(list)
+for (x, y), w in cw.items():
+    if x != y:
+        nbrs[index[label(*x)]].append((w, index[label(*y)]))
+        nbrs[index[label(*y)]].append((w, index[label(*x)]))
 rows = []
 for b, c in chapters:
     t, e = pts["tsk3"][label(b, c)], pts["esv"][label(b, c)]
@@ -124,10 +140,14 @@ for b, c in chapters:
         "dt": t["deg"], "de": e["deg"], "ot": [t["ot"], e["ot"]],
         "ct": t["comm"], "ce": e["comm"],
         "nt": [index[x] for x in t["nn"]], "ne": [index[x] for x in e["nn"]], "nx": [index[x] for x in t["tnn"]],
+        "hx": [helix["tsk3"]["xy"][len(rows)], helix["esv"]["xy"][len(rows)]],
+        "pr": t["pr"],
+        "g": [[j, int(w)] for w, j in sorted(nbrs[len(rows)], reverse=True)[:40]],
     })
 json.dump({
     "chapters": rows,
     "communities": {"tsk": nets["tsk3"]["communities"], "esv": nets["esv"]["communities"]},
+    "threads": {"tsk": helix["tsk3"]["threads"][:600], "esv": helix["esv"]["threads"][:600]},
 }, open(DEST / "map.json", "w"), ensure_ascii=False, separators=(",", ":"))
 
 genres = sorted(set(GENRE_OF.values()), key=list(GENRE_OF.values()).index)

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { MapData, Meta } from "./data";
 import { loadMap, loadMeta, loadText } from "./data";
-import { MapView, type MapSource } from "./MapView";
+import { MapView, type MapMode, type MapSource } from "./MapView";
 import { ChapterView } from "./ChapterView";
 import { Journal } from "./Journal";
 
@@ -28,6 +28,7 @@ export default function App() {
   const [route, setRoute] = useState<Route>({ view: "map" });
   const [lastChapter, setLastChapter] = useState<number>(-1);
   const [source, setSource] = useState<MapSource>("tsk");
+  const [mode, setMode] = useState<MapMode>(() => (window.innerWidth < 900 ? "2d" : "3d"));
 
   useEffect(() => {
     Promise.all([loadMeta(), loadMap()])
@@ -76,7 +77,7 @@ export default function App() {
       </header>
       <main className="layout">
         <section className="pane-map" aria-label="Mappa">
-          <MapView meta={meta} map={map} selected={selected} onOpen={openChapter} source={source} setSource={setSource} />
+          <MapView meta={meta} map={map} selected={selected} onOpen={openChapter} source={source} setSource={setSource} mode={mode} setMode={setMode} />
         </section>
         <section className="pane-side">{panel}</section>
       </main>
@@ -89,7 +90,7 @@ function Welcome() {
     <div className="welcome">
       <div className="eyebrow">Benvenuto</div>
       <h1>La Bibbia come una rete</h1>
-      <p>Ogni punto della mappa è un capitolo. Due capitoli sono vicini quando i rimandi li collegano spesso: quelli del <i>Treasury of Scripture Knowledge</i> (1830) o quelli dell'ESV (2001). Con "Testo" la vicinanza viene invece dalle parole.</p>
+      <p>La mappa è un'elica: dal basso in alto i capitoli in ordine, da Genesi ad Apocalisse. Capitoli che si richiamano (secondo il <i>Treasury of Scripture Knowledge</i> del 1830 o l'ESV del 2001) stanno sulla stessa verticale, anche se lontani nel tempo. Quelli che leggi si accendono.</p>
       <ol>
         <li>Tocca un capitolo, o cercalo.</li>
         <li>Leggilo su YouVersion con i pulsanti in alto.</li>

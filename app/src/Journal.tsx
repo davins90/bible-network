@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import type { MapData, Meta } from "./data";
 import { parseRef, rangeVerses, refLabel } from "./data";
 import { exportState, importState, removeSaved, setNote, useReader } from "./store";
+import { coverage, suggest } from "./recommend";
 
 export function Journal({ meta, map, text, onOpen }: { meta: Meta; map: MapData; text: string[] | null; onOpen: (i: number) => void }) {
   const reader = useReader();
@@ -17,6 +18,8 @@ export function Journal({ meta, map, text, onOpen }: { meta: Meta; map: MapData;
     return { n: keys.length, ot, nt: keys.length - ot, perBook, booksStarted: perBook.filter((x) => x > 0).length, booksDone: perBook.filter((x, i) => x === meta.books[i].verses.length).length };
   }, [reader.read, meta]);
 
+  const cov = useMemo(() => coverage(map, reader.read), [map, reader.read]);
+  const next = useMemo(() => suggest(map, reader.read, (b) => meta.books[b].it), [map, reader.read, meta]);
   const byDate = useMemo(() => {
     const m = new Map<string, [number, number][]>();
     for (const [k, ds] of Object.entries(reader.read)) for (const d of ds) {
@@ -57,6 +60,20 @@ export function Journal({ meta, map, text, onOpen }: { meta: Meta; map: MapData;
         <div><b>{stats.ot} · {stats.nt}</b><span>Antico · Nuovo Testamento</span></div>
         <div><b>{stats.booksStarted} · {stats.booksDone}</b><span>libri iniziati · completati</span></div>
         <div><b>{reader.saved.length}</b><span>collegamenti salvati</span></div>
+        <div><b>{Math.round(cov.centrality * 100)}%</b><span>della "centralità" della rete coperta (quota di PageRank dei capitoli letti)</span></div>
+        <div><b>{cov.regions} su {cov.regionsTotal}</b><span>regioni della rete toccate · equilibrio {Math.round(cov.evenness * 100)}%</span></div>
+      </section>
+
+      <section>
+        <div className="eyebrow">Cosa leggo dopo</div>
+        <div className="next-list">
+          {next.map((sg) => (
+            <button key={sg.why} className="next-item" onClick={() => onOpen(sg.index)}>
+              <b>{meta.books[map.chapters[sg.index].b].it} {map.chapters[sg.index].c}</b>
+              <span className="muted small">{sg.detail}</span>
+            </button>
+          ))}
+        </div>
       </section>
 
       <section>

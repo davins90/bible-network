@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { BookRefs, MapData, Meta } from "./data";
-import { isNT, loadBookRefs, parseRef, rangeVerses, refLabel, youVersionUrl } from "./data";
+import type { BookRefs, Highlight, MapData, Meta } from "./data";
+import { highlightsOf, isNT, loadBookRefs, parseRef, rangeVerses, refLabel, verseRefs, youVersionUrl } from "./data";
 import { chapterKey, linkId, todayISO, toggleReadToday, toggleSaved, useReader } from "./store";
+import { suggest } from "./recommend";
 
 type Filter = "all" | "esv" | "tsk";
+const WHY = { sequenza: "Il seguente", vicino: "Vicino a ciò che hai letto", esplora: "Esplora", inizio: "Per iniziare" } as const;
 
 export function ChapterView({
   meta, map, index, text, onOpen,
@@ -35,13 +37,15 @@ export function ChapterView({
   const savedIds = useMemo(() => new Set(reader.saved.map((s) => s.id)), [reader.saved]);
   const label = (i: number) => `${meta.books[map.chapters[i].b].it} ${map.chapters[i].c}`;
   const nVerses = book.verses[p.c - 1];
-  const verses = refs?.[String(p.c)] ?? {};
+  const chRefs = refs?.[String(p.c)];
+  const highlights = highlightsOf(chRefs);
+  const suggestions = useMemo(() => suggest(map, reader.read, (b) => meta.books[b].it, index), [map, reader.read, meta, index]);
   const fromOsis = (v: number) => `${book.osis}.${p.c}.${v}`;
   const crosses = (ref: string) => isNT(parseRef(meta, ref).from.b) !== isNT(p.b);
 
   const rows = [];
   for (let v = 1; v <= nVerses; v++) {
-    const vr = verses[String(v)];
+    const vr = verseRefs(chRefs, v);
     let esv = filter !== "tsk" && vr ? vr.e.map(([ph, rs]) => [ph, rs.filter((r) => !crossOnly || crosses(r))] as [string, string[]]).filter(([, rs]) => rs.length) : [];
     let tsk = filter !== "esv" && vr ? vr.t.filter(([r]) => !crossOnly || crosses(r)) : [];
     if (!esv.length && !tsk.length) { esv = []; tsk = []; }
@@ -49,11 +53,11 @@ export function ChapterView({
   }
   const anyRefs = rows.some((r) => r.esv.length || r.tsk.length);
 
-  const Chip = ({ from, to, source, votes }: { from: string; to: string; source: "esv" | "tsk"; votes?: number }) => {
+  const Chip = ({ from, to, source, votes, p: prob }: { from: string; to: string; source: "esv" | "tsk"; votes?: number; p?: number }) => {
     const key = `${from}|${to}`;
     const r = parseRef(meta, to);
     return (
-      <button className={`chip ${source} to-${isNT(r.from.b) ? "nt" : "ot"}`} aria-expanded={open === key} onClick={() => setOpen(open === key ? null : key)} title={votes ? `${votes} voti su OpenBible` : "Rimando ESV"}>
+      <button className={`chip ${source} to-${isNT(r.from.b) ? "nt" : "ot"}`} aria-expanded={open === key} onClick={() => setOpen(open === key ? null : key)} title={votes !== undefined ? `${votes} voti su OpenBible · probabilità che un curatore lo tenga ${Math.round((prob ?? 0) * 100)}%` : "Rimando ESV"}>
         {refLabel(meta, r)}
         {savedIds.has(linkId(from, to)) && <span aria-label="salvato"> ★</span>}
       </button>
@@ -73,6 +77,30 @@ export function ChapterView({
         <div className="preview-actions">
           <button className={saved ? "btn on" : "btn"} onClick={() => toggleSaved(from, to, source)}>{saved ? "★ Salvato nel diario" : "☆ Salva il collegamento"}</button>
           <button className="btn ghost" onClick={() => onOpen(target)}>Vai a {meta.books[r.from.b].it} {r.from.c} →</button>
+        </div>
+      </div>
+    );
+  };
+
+  const HighlightCard = ({ h }: { h: Highlight }) => {
+    const f = parseRef(meta, h.from), t = parseRef(meta, h.to);
+    const target = map.chapters.findIndex((c) => c.b === t.from.b && c.c === t.from.c);
+    const saved = savedIds.has(linkId(h.from, h.to));
+    return (
+      <div className={`hl ${h.kind}`}>
+        <div className="hl-head">
+          <span className="hl-kind">{h.kind === "eco" ? "Eco" : "Citazione"}</span>
+          <span className="muted small">{h.kind === "eco" ? "stesso tema con parole diverse" : "parole quasi uguali"}</span>
+        </div>
+        <div className="hl-pair">
+          <div><b>{refLabel(meta, f)}</b>{text && <p>{rangeVerses(meta, text, f, 1)[0]?.text}</p>}</div>
+          <div className="hl-arrow" aria-hidden="true">↓</div>
+          <div><b>{refLabel(meta, t)}</b>{text && <p>{rangeVerses(meta, text, t, 2).map((x) => x.text).join(" ")}</p>}</div>
+        </div>
+        <p className="muted small">Probabilità che un curatore moderno lo tenga: {Math.round(h.p * 100)}%{h.esv ? " · presente anche nell'ESV" : ""} · {h.votes.toLocaleString("it-IT")} voti su OpenBible</p>
+        <div className="preview-actions">
+          <button className={saved ? "btn on" : "btn"} onClick={() => toggleSaved(h.from, h.to, h.esv ? "esv" : "tsk")}>{saved ? "★ Salvato" : "☆ Salva"}</button>
+          <button className="btn ghost" onClick={() => onOpen(target)}>Vai a {meta.books[t.from.b].it} {t.from.c} →</button>
         </div>
       </div>
     );
@@ -99,6 +127,13 @@ export function ChapterView({
           <div><dt>Verso l'AT (TSK)</dt><dd>{Math.round(p.ot[0] * 100)}%</dd></div>
         </dl>
       </header>
+
+      <section className="highlights" aria-label="Collegamenti in evidenza">
+        <div className="eyebrow">In evidenza</div>
+        {!refs && <p className="muted small">Carico…</p>}
+        {refs && highlights.length === 0 && <p className="muted small">Nessun collegamento in evidenza per questo capitolo.</p>}
+        {highlights.map((h) => <HighlightCard key={h.kind} h={h} />)}
+      </section>
 
       <section className="neighbours">
         {([["Vicini nei rimandi TSK", p.nt], ["Vicini nei rimandi ESV", p.ne], ["Vicini nel testo", p.nx]] as [string, number[]][]).map(([t, ids]) => (
@@ -138,7 +173,7 @@ export function ChapterView({
               {tsk.length > 0 && (
                 <div className="group">
                   <span className="phrase tsk-label">TSK</span>
-                  {tsk.map(([r, n]) => <Chip key={r} from={from} to={r} source="tsk" votes={n} />)}
+                  {tsk.map(([r, n, pk]) => <Chip key={r} from={from} to={r} source="tsk" votes={n} p={pk} />)}
                 </div>
               )}
               {openTo && <Preview from={from} to={openTo} source={openSource} />}
@@ -146,6 +181,19 @@ export function ChapterView({
           );
         })}
       </section>
+      <section className="next" aria-label="Cosa leggo dopo">
+        <div className="eyebrow">Cosa leggo dopo</div>
+        <div className="next-list">
+          {suggestions.map((sg) => (
+            <button key={sg.why} className="next-item" onClick={() => onOpen(sg.index)}>
+              <span className="next-why">{WHY[sg.why]}</span>
+              <b>{meta.books[map.chapters[sg.index].b].it} {map.chapters[sg.index].c}</b>
+              <span className="muted small">{sg.detail}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <footer className="attribution">
         Rimandi: ESV® cross-references © 2001 Crossway, dall'ESV API (<a href="https://www.esv.org" target="_blank" rel="noopener noreferrer">esv.org</a>) · Treasury of Scripture Knowledge via OpenBible.info (CC BY). Testo delle anteprime: Berean Standard Bible (dominio pubblico); KJV dove la BSB omette il versetto.
       </footer>

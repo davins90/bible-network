@@ -28,6 +28,9 @@ export interface MapChapter {
   nt: number[]; // neighbour chapter indices: TSK map, ESV map, text map
   ne: number[];
   nx: number[];
+  hx: [[number, number], [number, number]]; // helix plane (diffusion map axes 1-2): TSK, ESV
+  pr: number; // PageRank in the TSK chapter graph (x number of chapters)
+  g: [number, number][]; // strongest neighbours in the TSK chapter graph: [chapter index, references]
 }
 export interface Community {
   id: number;
@@ -37,9 +40,27 @@ export interface Community {
 export interface MapData {
   chapters: MapChapter[];
   communities: { tsk: Community[]; esv: Community[] };
+  threads: { tsk: [number, number, number, number][]; esv: [number, number, number, number][] }; // [i, j, refs, observed/expected]
 }
-// verse -> { e: ESV groups [phrase, refs[]], t: TSK [ref, votes][] }
-export type BookRefs = Record<string, Record<string, { e: [string, string[]][]; t: [string, number][] }>>;
+export interface Highlight {
+  kind: "eco" | "citazione";
+  from: string;
+  to: string;
+  p: number; // probability that a modern curator keeps it (model trained on the ESV)
+  votes: number;
+  sim: number;
+  esv: boolean;
+  cross: boolean;
+}
+export interface VerseRefs {
+  e: [string, string[]][]; // ESV groups [phrase, refs]
+  t: [string, number, number][]; // TSK [ref, votes, curator probability], best first
+}
+// chapter -> verse -> refs, plus the key "_h": highlighted connections of the chapter
+export type ChapterRefs = Record<string, VerseRefs | Highlight[]>;
+export type BookRefs = Record<string, ChapterRefs>;
+export const verseRefs = (ch: ChapterRefs | undefined, v: number) => ch?.[String(v)] as VerseRefs | undefined;
+export const highlightsOf = (ch: ChapterRefs | undefined) => (ch?._h as Highlight[] | undefined) ?? [];
 
 const cache = new Map<string, Promise<unknown>>();
 function load<T>(path: string): Promise<T> {
